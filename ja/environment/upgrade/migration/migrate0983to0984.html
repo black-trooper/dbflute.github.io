@@ -1,0 +1,169 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja" lang="ja" >
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<meta http-equiv="Content-Style-Type" content="text/css" />
+	<meta name="keywords" content="DBFlute,移行時の注意,Migration,Attention" />
+	<link rel="stylesheet" type="text/css" href="../../../../css/sub.css" />
+	<!--[if IE 6.0]>
+		<link rel="stylesheet" type="text/css" href="../../../../css/cb/sub.css" />
+	<![endif]--> 
+	<title>移行 0.9.8.3 to 0.9.8.4 | DBFlute</title>
+</head>
+<body>
+<div id="container" class="ct-upgrade">
+
+<div id="mainbar">
+<div id="header">
+	<div class="navi-upper"><a href="../../../../ja/sitemap.html">SiteMap</a>|<a href="http://d.hatena.ne.jp/jflute/">Author's Blog</a></div>
+	<div class="navi-main">
+	<ul>
+		<li class="hd-introduction"><a href="../../../../ja/introduction/index.html"><img src="../../../../image/parts/navi/link-intro.png" alt="Introduction" width="75" height="32" /></a></li>
+		<li class="hd-tutorial"><a href="../../../../ja/tutorial/index.html"><img src="../../../../image/parts/navi/link-tuto.png" alt="Tutorial" width="56" height="24" /></a>
+			<ul>
+				<li class="hd-architect"><a href="../../../../ja/tutorial/architect.html"><img src="../../../../image/parts/navi/link-arch.png" alt="for Architect" width="80" height="24" /></a></li>
+				<li class="hd-developer"><a href="../../../../ja/tutorial/developer.html"><img src="../../../../image/parts/navi/link-dev.png" alt="for Developer" width="87" height="24" /></a></li>
+			</ul>
+		</li>
+		<li class="hd-environment"><a href="../../../../ja/environment/index.html"><img src="../../../../image/parts/navi/link-env.png" alt="Environment" width="84" height="25" /></a>
+			<ul>
+				<li class="hd-install"><a href="../../../../ja/environment/setup/index.html"><img src="../../../../image/parts/navi/link-setup.png" alt="Setup" width="42" height="24" /></a></li>
+				<li class="hd-upgrade"><a href="../../../../ja/environment/upgrade/index.html"><img src="../../../../image/parts/navi/link-upgrade.png" alt="Upgrade" width="61" height="25" /></a></li>
+			</ul>
+		</li>
+		<li class="hd-manual"><a href="../../../../ja/manual/index.html"><img src="../../../../image/parts/navi/link-manual.png" alt="Manual" width="62" height="25" /></a></li>
+	</ul>
+	</div>
+</div>
+
+<div id="content">
+	<h1>移行 0.9.8.3 to 0.9.8.4</h1>
+	<ul class="indexlist">
+		<li><a href="#basic">お約束の注意点</a></li>
+		<li><a href="#env">環境上の注意点</a>
+			<ul>
+				<li><a href="#loaddatareverse">DataXlsTemplate は LoadDataReverse に</a></li>
+				<li><a href="#newaltercheck">AlterCheckが生まれ変わり</a></li>
+			</ul>
+		</li>
+		<li><a href="#impl">実装上の注意点</a>
+			<ul>
+				<li><a href="#sqlserverescape">SQLServerの正規表現ワイルドカードをエスケープ</a></li>
+				<li><a href="#optionresolved">LikeSearchOptionで特殊ワイルドカードは実行時解決</a></li>
+			</ul>
+		</li>
+	</ul>
+
+	<h2 id="basic">お約束の注意点</h2>
+	<dl class="textlist">
+		<dt>古いバージョンの削除</dt>
+		<dd>古いバージョンのDBFluteランタイム(JAR)が[WEB-INF/lib]の下などに残らないように</dd>
+		<dt>タスクを実行し忘れないように</dt>
+		<dd>Generateタスクだけでなく、(外だしSQLがある場合は)Sql2Entityタスクも実行</dd>
+	</dl>
+
+	<h2 id="env">環境上の注意点</h2>
+	<h3 id="loaddatareverse">DataXlsTemplate は LoadDataReverse に</h3>
+	<p>
+		Docタスクの DataXlsTemplate は LoadDataReverse として再出発することになりました。
+	</p>
+	<div class="detailpage"><a href="../../../manual/function/generator/task/doc/dataxlstemplate.html">DataXlsTemplate</a></div>
+	<div class="detailpage"><a href="../../../manual/function/generator/task/doc/loaddatareverse.html">LoadDataReverse</a></div>
+	<h3 id="newaltercheck">AlterCheckが生まれ変わり</h3>
+	<p>
+		前バージョンで導入された AlterCheck が、より現場フィットになるように改善されています。
+	</p>
+	<div class="detailpage"><a href="../../../manual/function/generator/task/replaceschema/altercheck.html">AlterCheck</a></div>
+
+	<h2 id="impl">実装上の注意点</h2>
+	<h3 id="sqlserverescape">SQLServerの正規表現ワイルドカードをエスケープ</h3>
+	<p>
+		SQLServer の LikeSearch では、正規表現ワイルドカードが利用できます。"[a-b]"
+		という風に [ と ] で囲った中で正規表現が利用できます。ConditionBean および ParameterBean
+		で行われている一致の方向が決まったときの自動のエスケープにおいて、
+		その括弧もエスケープをするようにしました。
+	</p>
+	<p>
+		これにて、アプリで自前でエスケープする必要はありませんが、このバージョンにアップグレードする際に既にエスケープ処理が入っていると、
+		二重でエスケープされてしまうので、自前のエスケープは基本的に除去する必要があります。
+	</p>
+	<h3 id="optionresolved">LikeSearchOptionで特殊ワイルドカードは実行時解決</h3>
+	<p>
+		Oracle と DB2 において、LikeSearchOption を ConditionBean や ParameterBean ではなく、
+		単なるエスケープのための文字列ユーティリティクラスとして利用している方のみ意識する項目です。
+		例えば、LikeSearchOption.generateRealValue() というメソッドに心当たりがない方は意識する必要はありません。
+	</p>
+	<p>
+		LikeSearchOption のクラス自体にワイルドカードをエスケープする処理が存在しますが、
+		Oracleの全角のパーセントやSQLServerの正規表現括弧など、DBMS独自のワイルドカードのエスケープは Behavior
+		で検索処理を実行したときに解決されます。
+	</p>
+	<p>
+		それまでのバージョンでは、どのDBMSでも全角のパーセントを固定でエスケープしていましたが、
+		ワイルドカードでない文字をエスケープした場合にエラーになるDBMSが若干存在するため(Apache Derbyなど)、
+		DBMS独自のワイルドカードをエスケープするかどうかの判定を精密に行うために Behavior の中に移行しました。
+	</p>
+	<p>
+		よって、(Oracle, DB2 にて) LikeSearchOption を単なるユーティリティクラスとして利用している場合、
+		つまり option.generateRealValue() メソッドを直接呼び出した場合は、このバージョンから全角のパーセントはエスケープされないのでご注意下さい。
+	</p>
+
+</div>
+</div>
+
+<div id="sidebar">
+	<div class="logo"><a href="../../../../"><img src="../../../../image/parts/logo.png" alt="dbflute-logo" width="240" height="110" /></a></div>
+<ul>
+		<li><a href="../../../../ja/environment/setup/index.html">セットアップ</a>
+			<ul>
+				<li><a href="../../../../ja/environment/setup/emecha.html">*EMecha</a></li>
+				<li><a href="../../../../ja/environment/setup/maven.html">*Maven</a></li>
+				<li class="upper-space"><a href="../../../../ja/environment/setup/plain.html">*手動</a></li>
+				<li><a href="../../../../ja/environment/setup/runtime.html">DBFluteランタイムの準備</a></li>
+				<li><a href="../../../../ja/environment/setup/jdbcdriver.html">JDBCドライバの準備</a></li>
+				<li class="upper-space"><a href="../../../../ja/environment/setup/firstprop.html">特定環境適用プロパティ</a></li>
+				<li><a href="../../../../ja/environment/setup/generate.html">クラスの自動生成</a></li>
+				<li class="upper-space"><a href="../../../../ja/environment/setup/injection.html">DI環境の調整</a></li>
+				<li><a href="../../../../ja/environment/setup/thenafter.html">その後の設定</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../ja/environment/upgrade/index.html">アップグレード</a>
+			<ul>
+				<li><a href="../../../../ja/environment/upgrade/emecha.html">*EMecha</a></li>
+				<li><a href="../../../../ja/environment/upgrade/maven.html">*Maven</a></li>
+				<li class="upper-space"><a href="../../../../ja/environment/upgrade/plain.html">*手動</a></li>
+				<li><a href="../../../../ja/environment/upgrade/migration/index.html">移行情報</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../ja/environment/newest.html">最新バージョン</a></li>
+		<li><a href="../../../../ja/environment/license.html">ライセンス</a></li>
+		<li><a href="../../../../ja/environment/supported.html">サポート情報</a></li>
+		<li><a href="../../../../ja/environment/changelog/index.html">ChangeLog</a></li>
+	</ul>
+
+</div>
+
+<div id="footer">
+	<div><a href="../../../../ja/sitemap.html">SiteMap</a> <a href="http://d.hatena.ne.jp/jflute">Author's Blog</a><a href="https://www.seasar.org/issues/browse/DBFLUTE">BTS</a></div>
+	<ul class="footer-navi">
+		<li class="hd-introduction"><a href="../../../../ja/introduction/index.html">Introduction</a></li>
+		<li class="hd-tutorial"><a href="../../../../ja/tutorial/index.html">Tutorial</a>
+			<ul>
+				<li class="hd-architect"><a href="../../../../ja/tutorial/architect.html">for Architect</a></li>
+				<li class="hd-developer"><a href="../../../../ja/tutorial/developer.html">for Developer</a></li>
+			</ul>
+		</li>
+		<li class="hd-environment"><a href="../../../../ja/environment/index.html">Environment</a>
+			<ul>
+				<li class="hd-install"><a href="../../../../ja/environment/setup/index.html">Setup</a></li>
+				<li class="hd-upgrade"><a href="../../../../ja/environment/upgrade/index.html">Upgrade</a></li>
+			</ul>
+		</li>
+		<li class="hd-manual"><a href="../../../../ja/manual/index.html">Manual</a></li>
+	</ul>
+
+</div>
+
+</div>
+</body>
+</html>

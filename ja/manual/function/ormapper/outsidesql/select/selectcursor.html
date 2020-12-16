@@ -1,0 +1,356 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja" lang="ja" >
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<meta http-equiv="Content-Style-Type" content="text/css" />
+	<meta name="keywords" content="DBFlute,外だしSQL,OutsideSql,カーソル,メモリ節約,OutOfMemory,ResultSet" />
+	<link rel="stylesheet" type="text/css" href="../../../../../../css/sub.css" />
+	<!--[if IE 6.0]>
+		<link rel="stylesheet" type="text/css" href="../../../../../../css/cb/sub.css" />
+	<![endif]--> 
+	<title>(外だしSQL)selectCursor() | DBFlute</title>
+</head>
+<body>
+<div id="container" class="ct-manual">
+
+<div id="mainbar">
+<div id="header">
+	<div class="navi-upper"><a href="../../../../../../ja/sitemap.html">SiteMap</a>|<a href="http://d.hatena.ne.jp/jflute/">Author's Blog</a></div>
+	<div class="navi-main">
+	<ul>
+		<li class="hd-introduction"><a href="../../../../../../ja/introduction/index.html"><img src="../../../../../../image/parts/navi/link-intro.png" alt="Introduction" width="75" height="32" /></a></li>
+		<li class="hd-tutorial"><a href="../../../../../../ja/tutorial/index.html"><img src="../../../../../../image/parts/navi/link-tuto.png" alt="Tutorial" width="56" height="24" /></a>
+			<ul>
+				<li class="hd-architect"><a href="../../../../../../ja/tutorial/architect.html"><img src="../../../../../../image/parts/navi/link-arch.png" alt="for Architect" width="80" height="24" /></a></li>
+				<li class="hd-developer"><a href="../../../../../../ja/tutorial/developer.html"><img src="../../../../../../image/parts/navi/link-dev.png" alt="for Developer" width="87" height="24" /></a></li>
+			</ul>
+		</li>
+		<li class="hd-environment"><a href="../../../../../../ja/environment/index.html"><img src="../../../../../../image/parts/navi/link-env.png" alt="Environment" width="84" height="25" /></a>
+			<ul>
+				<li class="hd-install"><a href="../../../../../../ja/environment/setup/index.html"><img src="../../../../../../image/parts/navi/link-setup.png" alt="Setup" width="42" height="24" /></a></li>
+				<li class="hd-upgrade"><a href="../../../../../../ja/environment/upgrade/index.html"><img src="../../../../../../image/parts/navi/link-upgrade.png" alt="Upgrade" width="61" height="25" /></a></li>
+			</ul>
+		</li>
+		<li class="hd-manual"><a href="../../../../../../ja/manual/index.html"><img src="../../../../../../image/parts/navi/link-manual.png" alt="Manual" width="62" height="25" /></a></li>
+	</ul>
+	</div>
+</div>
+
+<div id="content">
+	<h1>(外だしSQL)selectCursor()</h1>
+	<p>
+		"外だしSQLの使い方" を既に読んでいることが前提となります。
+	</p>
+	<div class="relatedpage"><a href="../howto.html">外だしSQLの使い方</a></div>
+	<ul class="indexlist">
+		<li><a href="#overview">概要</a></li>
+		<li><a href="#howto">実装方法</a>
+			<ul>
+				<li><a href="#typesafecursor">TypeSafeCursorを用意</a></li>
+				<li><a href="#methodcall">メソッドの呼び出し <span class="frm">※1.1.x (Java8版)</span></a></li>
+				<li><a href="#methodcall10x">メソッドの呼び出し <span class="frm">※1.0.x (Java6版)</span></a></li>
+				<li><a href="#typedcall">定型呼び出し形式</a></li>
+				<li><a href="#freestyle">フリースタイル形式</a></li>
+				<li><a href="#cursorhandler">CursorHandlerの実装</a></li>
+			</ul>
+		</li>
+		<li><a href="#scalar">スカラ値では受け取れない</a></li>
+		<li><a href="#bypagingsql">ページングのSQLでカーソル検索</a>
+			<ul>
+				<li><a href="#bypagingsqlabout">ManualPagingだと工夫が必要</a></li>
+				<li><a href="#bypagingsqlhowto">Exクラスにてboolean制御</a></li>
+			</ul>
+		</li>
+	</ul>
+
+	<h2 id="overview">概要</h2>
+	<p>
+		<em class="keyword">外だしSQLでカーソル検索</em>
+		をします。DBFluteにおけるカーソル検索とはどのようなものか？について説明するページがあります。
+	</p>
+	<div class="detailpage"><a href="../../../genbafit/implfit/cursorselect/index.html">現場フィット - カーソル検索</a></div>
+	<p>
+		会話上では、<em class="keyword">(外だしSQLの)せれくとかーそる</em> と表現します。
+	</p>
+
+	<h2 id="howto">実装方法</h2>
+	<h3 id="typesafecursor">TypeSafeCursorを用意</h3>
+	<p>
+		外だしSQLでは、カーソルを <em class="keyword">TypeSafeCursor</em>
+		(ResultSetのタイプセーフなラッパークラス)で取扱います。このクラスは、Sql2Entity
+		タスクで自動生成します。SQLファイルの中で、CustomizeEntityマークと共に
+		<em class="keyword">TypeSafeCursorマーク</em> を定義して、Sql2Entityを実行するようにして下さい。
+		(EMechaで作成するときは、"Use Cursor" にチェックを付ければOK)
+	</p>
+	<div class="detailpage"><a href="../../../generator/task/sql2entity/typesafecursor.html#typesafecursormark">TypeSafeCorsorマーク</a></div>
+<pre><span class="codetitle">e.g. SimpleMemberという名前のTypeSafeCursorを生成 @SQL-File</span><code>
+<span class="comment">-- #df:entity#</span>
+<span class="point">-- +cursor+</span>
+<span class="keyword">select</span> <span class="abbreviation">...</span>
+  <span class="keyword">from</span> <span class="abbreviation">...</span>
+</code></pre>
+	<h3 id="methodcall">メソッドの呼び出し <span class="frm">※1.1.x (Java8版)</span></h3>
+	<p>
+		outsideSql() の後、<em class="keyword">selectCursor()</em> を呼び出します。
+	</p>
+<pre><span class="codetitle">e.g. 外だしSQLのカーソル検索の実装手順 (Eclipseでコード補完) @Java</span><code>
+<span class="attribute">memberBhv</span>.o <span class="comment">// .o と打って enter</span>
+--
+<span class="attribute">memberBhv</span>.outsideSql().selCu <span class="comment">// .selCu と打って enter</span>
+--
+<span class="attribute">memberBhv</span>.outsideSql().<span class="point">selectCursor</span>(pmb, handler);
+</code></pre>
+	<p>
+		メソッドはオーバーロードで "定型呼び出し形式" と "フリースタイル形式" と二つあります。
+	</p>
+	<h3 id="methodcall10x">メソッドの呼び出し <span class="frm">※1.0.x (Java6版)</span></h3>
+	<p>
+		outsideSql() の後、<em class="keyword">cursorHandling()</em> を呼び出し、その後
+		<em class="keyword">selectCursor()</em> を呼び出します。
+	</p>
+<pre><span class="codetitle">e.g. 外だしSQLのカーソル検索の実装手順 (Eclipseでコード補完) @Java</span><code>
+<span class="attribute">memberBhv</span>.o <span class="comment">// .o と打って enter</span>
+--
+<span class="attribute">memberBhv</span>.outsideSql().cu <span class="comment">// .cu と打って enter</span>
+--
+<span class="attribute">memberBhv</span>.outsideSql().<span class="point">cursorHandling()</span>.s <span class="comment">// .s と打って enter</span>
+--
+<span class="attribute">memberBhv</span>.outsideSql().cursorHandling().<span class="point">selectCursor</span>(pmb, handler);
+</code></pre>
+	<h3 id="typedcall">定型呼び出し形式</h3>
+	<p>
+		TypedParameterBean を引数に受け取ります。(null は許可されません)
+	</p>
+	<div class="detailpage"><a href="../../../generator/task/sql2entity/parameterbean.html#typed">TypedParameterBean</a></div>
+	<p>
+		ただし、カーソル検索は戻り値Entityを利用しない検索であり、CursorHandler は別途引数で指定します。
+	</p>
+	<p>
+		TypeSafeCursorマーク付きのCustomizeEntityマーク、および、ParameterBeanマークが定義されていることで
+		TypedParameterBean の定型呼び出しが利用できます。
+	</p>
+	<h3 id="freestyle">フリースタイル形式</h3>
+	<p>
+		パス、パラメータ(ParameterBean)、CursorHandlerの型の三つの要素を引数に受け取ります。 
+		パスとパラメータに関しては、それぞれフリースタイル形式の基本仕様と全く同じです。
+	</p>
+	<div class="relatedpage"><span class="working"><!-- <a href="../howto.html#freestylebasic"> -->外だしSQLの使い方 - フリースタイル基本仕様<!-- </a> --></span></div>
+	<h3 id="cursorhandler">CursorHandlerの実装</h3>
+	<p>
+		第二引数、もしくは、第三引数の handler に、Sql2Entityで自動生成された
+		<em class="keyword">CursorHandlerの実装クラス(TypeSafeCursor)の fetchCursor() メソッド</em>
+		をオーバーライドしたクラスのインスタンスを指定します。fetchCursor() では、Cursor クラスを参照して業務処理を実装します。
+		selectCursor() の処理の中で、この fetchCursor() がコールバックされます。
+	</p>
+<pre><span class="codetitle">e.g. TypeSafeCursorの利用 @Java</span><code>
+memberBhv.outsideSql()
+.selectCursor(PATH_sel<span class="abbreviation">...</span>, pmb, <span class="keyword">new</span> <span class="point">PurchaseSummaryMemberCursorHandler</span>() {
+    <span class="keyword">public</span> Object fetchCursor(<span class="point">PurchaseSummaryMemberCursor</span> cursor) <span class="keyword">thr</span><span class="abbreviation">...</span> {
+        <span class="keyword">while</span> (cursor.next()) { <span class="comment">// on memory per one record</span>
+            <span class="comment">// type safe access</span>
+            Integer memberId = cursor.getMemberId();
+            String memberName = cursor.getMemberName();
+            Date birthdate = cursor.getBirthdate();
+            Timestamp formalizedDatetime = cursor.getFormalizedDatetime();
+            Long purchaseSummary = cursor.getPurchaseSummary();
+
+            <span class="abbreviation">...</span>
+        }
+        <span class="keyword">return null</span>; <span class="comment">// basically null</span>
+    }
+});
+</code></pre>
+	<h4 id="loopway">カーソルのループのやり方</h4>
+	<p>
+		fetchCursor() の中で、引数の cursor をループさせてデータを取得します。next()
+		メソッドで次の行があるかどうかを判定し、最後の行までループさせます。
+	</p>
+	<h4 id="dataget">データの(タイプセーフな)取得</h4>
+	<p>
+		それぞれのカラムのデータの取得は、Entity の時と同じように、get[名前]
+		で取得することができます。内部的には、このメソッドの中で ResultSet のメソッドを呼び出してデータを取得しています。
+	</p>
+	<h4 id="cursorresult">selectCursor()の戻り値</h4>
+	<p>
+		fetchCursor() の戻り値が、そのまま selectCursor() の戻り値となります。この CursorHandler
+		の中で業務的な処理が終了するのであれば、基本的に null 固定で問題ありません。
+	</p>
+
+	<h2 id="scalar">スカラ値では受け取れない</h2>
+	<p>
+		外だしSQLのカーソル検索では、必ず TypeSafeCursor
+		を利用しますので、select 句のカラムが一つだけでも TypeSafeCursor
+		を自動生成して、それを利用してデータを受け取ります。
+	</p>
+
+	<h2 id="bypagingsql">ページングのSQLでカーソル検索</h2>
+	<h3 id="bypagingsqlabout">ManualPagingだと工夫が必要</h3>
+	<p>
+		ページング検索のSQLをカーソル検索でも使いたい、というような場合、以下のような対応になります。
+	</p>
+	<dl class="keymainlist">
+		<dt>AutoPaging</dt><dd>気にせず利用できる</dd>
+		<dt>ManualPaging</dt><dd>少し工夫が必要</dd>
+	</dl>
+	<p>
+		ParameterBean自体は、ページングとカーソルの両方を定義した上で自動生成することができますが、ManualPaging
+		だと実行時にページング条件がそのまま残ってしまいます。<span class="frm">(DBFluteは、ManualPagingのページング条件だけを自動で抑制することはできないので)</span>
+	</p>
+	<h3 id="bypagingsqlhowto">Exクラスにてboolean制御</h3>
+	<p>
+		ManualPagingの外だしSQLのページング条件部分にて、カーソル検索時はページング条件が無効になるように isCursorHandling() の条件分岐を入れます。
+		<span class="frm">(代理判定メソッドの自動判別の機能を使っています)</span>
+	</p>
+	<div class="relatedpage"><a href="../../../generator/task/sql2entity/pmbautodetect.html#alternatebool">代理判定メソッドの自動判別</a></div>
+<pre><span class="codetitle">e.g. ページングのSQLの中に、カーソル検索のための条件分岐を指定 @SQL-File</span><code>
+ <span class="comment">/*IF pmb.isPaging()*/</span>
+ <span class="keyword">order by</span> PURCHASE_MAX_PRICE <span class="keyword">desc nulls last</span>, mb.MEMBER_ID <span class="keyword">asc</span>
+ <span class="comment">/*IF !pmb.<span class="point">isCursorHandling()</span>*/</span>
+ <span class="keyword">limit</span> <span class="comment">/*pmb.fetchSize*/</span>20 <span class="keyword">offset</span> <span class="comment">/*pmb.pageStartIndex*/</span>80
+ <span class="comment">/*END*/</span>
+ <span class="comment">/*END*/</span>
+</code></pre>
+	<p>
+		ParameterBean のExクラスにて、共有のためのboolean制御を行います。
+		<span class="frm">(少し特殊ですので、別の人が見たときに迷わせないようにコメントを書いておきましょう。このドキュメントへのURLを記載しておくと良いです)</span>
+	</p>
+<pre><span class="codetitle">e.g. ParameterBean のExクラスにて、ListHandlingPmbとboolean制御 @Java</span><code>
+<span class="abbreviation">...</span>
+<span class="comment"> * @author DBFlute(AutoGenerator)
+ * @author jflute
+ */</span>
+<span class="keyword">public class</span> PagingWithCursorMemberPmb <span class="keyword">extends</span> BsPagingWithListMemberPmb {
+
+    <span class="keyword">private boolean</span> <span class="attribute">cursorHandling</span>;
+
+    @Override
+    <span class="keyword">public boolean</span> isPaging() { <span class="comment">// not to depend on framework default value</span>
+        <span class="keyword">return</span> <span class="keyword">super</span>.isPaging() || <span class="attribute">cursorHandling</span>; <span class="comment">// always true if cursor handling</span>
+    }
+
+    @Override
+    <span class="keyword">public boolean</span> isCursorHandling() { <span class="comment">// to suppress paging condition</span>
+        <span class="keyword">return</span> <span class="attribute">cursorHandling</span>;
+    }
+
+    <span class="comment">/**
+     * Use parameter-bean for cursor handling.
+     */</span>
+    <span class="keyword">public void</span> forCursorHandling() {
+        <span class="attribute">cursorHandling</span> = <span class="keyword">true</span>;
+    }
+}
+</code></pre>
+	<ul class="codeoutro">
+		<li>isPaging()のオーバーライドは必須ではないが、フレームワークのデフォルト値に依存しないように</li>
+		<li>クラスのJavaDocにauthorを付けるポリシーの場合は、ここでも忘れずに</li>
+	</ul>
+	<p>
+		そして、カーソル検索を実行するときに(だけ)、forCursorHandling() メソッドを呼びます。
+	</p>
+<pre><span class="codetitle">e.g. カーソル検索であることを示して外だしSQLを実行 @Java</span><code>
+PagingWithCursorMemberPmb pmb = <span class="keyword">new</span> PagingWithCursorMemberPmb();
+pmb.<span class="point">forCursorHandling()</span>;
+
+memberBhv.outsideSql().selectCursor(pmb, <span class="abbreviation">...</span>);
+
+<span class="abbreviation">...</span>
+</code></pre>
+	<p>
+		手動による制御なので、ページング検索側のプログラムも含めて、しっかりテストをしましょう。
+	</p>
+
+</div>
+</div>
+
+<div id="sidebar">
+	<div class="logo"><a href="../../../../../../"><img src="../../../../../../image/parts/logo.png" alt="dbflute-logo" width="240" height="110" /></a></div>
+<ul>
+		<li><a href="../../../../../../ja/manual/function/generator/index.html">自動生成ツール</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/generator/client/index.html">DBFluteクライアント</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/engine/index.html">DBFluteエンジン</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/index.html">DBFluteタスク</a>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/generator/task/generate/index.html">Generate</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/sql2entity/index.html">Sql2Entity</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/generator/task/replaceschema/index.html">ReplaceSchema</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/manage/index.html">Manage</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/doc/schemahtml.html">SchemaHTML</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/function/ormapper/index.html">O/Rマッパ</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/ormapper/behavior/index.html">Behavior</a></li>
+				<li><a href="../../../../../../ja/manual/function/ormapper/conditionbean/index.html">ConditionBean</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/ormapper/outsidesql/index.html">OutsideSql</a></li>
+				<li><a href="../../../../../../ja/manual/function/ormapper/entity/index.html">Entity</a></li>
+				<li><a href="../../../../../../ja/manual/function/ormapper/runtime/index.html">DBFluteランタイム</a></li>
+			</ul>
+		</li>
+		<li>
+			<a href="../../../../../../ja/manual/function/genbafit/index.html">現場フィット</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/genbafit/implfit/index.html">アプリ実装の全体最適</a></li>
+				<li><a href="../../../../../../ja/manual/function/genbafit/projectfit/index.html">プロジェクト構成対応</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/genbafit/runtimefit/index.html">実行時共通要件の実現</a></li>
+				<li><a href="../../../../../../ja/manual/function/genbafit/deprecatedfit/index.html">非推奨な構造フォロー</a></li>
+				<li><a href="../../../../../../ja/manual/function/genbafit/dbflutefit/index.html">DBFluteサポート</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/function/helper/index.html">支援ツール</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/generator/intro/index.html">DBFlute Intro</a></li>
+				<li><a href="../../../../../../ja/manual/function/helper/emecha/index.html">EMecha (Eclipse Plugin)</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/helper/maven/index.html">Maven DBFlute Plugin</a></li>
+				<li><a href="../../../../../../ja/manual/function/helper/saflute/index.html">SAFlute</a></li>
+				<li><a href="../../../../../../ja/manual/function/helper/utflute/index.html">UTFlute</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/reference/index.html">リファレンス</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/reference/dbway/index.html">DBMSごとの取扱い</a></li>
+				<li><a href="../../../../../../ja/manual/reference/diway/index.html">DIコンテナごとの取扱い</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/reference/dfprop/index.html">DBFluteプロパティ</a></li>
+				<li><a href="../../../../../../ja/manual/reference/dictionary/index.html">DBFlute用語集</a></li>
+				<li><a href="../../../../../../ja/manual/reference/example/index.html">DBFlute Example</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/reference/faq/index.html">FAQ</a></li>
+				<li><a href="../../../../../../ja/manual/reference/troubleshooting/index.html">トラブルシューティング</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/topic/index.html">トピック</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/topic/dbdesign/index.html">DB設計</a></li>
+				<li><a href="../../../../../../ja/manual/topic/programming/index.html">プログラミング</a></li>
+				<li><a href="../../../../../../ja/manual/topic/friends/index.html">他のフレームワーク</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/topic/office/index.html">事務的な話</a></li>
+				<li><a href="../../../../../../ja/manual/topic/dbflutenet/index.html">DBFlute.NET</a></li>
+			</ul>
+		</li>
+	</ul>
+
+</div>
+
+<div id="footer">
+	<div><a href="../../../../../../ja/sitemap.html">SiteMap</a> <a href="http://d.hatena.ne.jp/jflute">Author's Blog</a><a href="https://www.seasar.org/issues/browse/DBFLUTE">BTS</a></div>
+	<ul class="footer-navi">
+		<li class="hd-introduction"><a href="../../../../../../ja/introduction/index.html">Introduction</a></li>
+		<li class="hd-tutorial"><a href="../../../../../../ja/tutorial/index.html">Tutorial</a>
+			<ul>
+				<li class="hd-architect"><a href="../../../../../../ja/tutorial/architect.html">for Architect</a></li>
+				<li class="hd-developer"><a href="../../../../../../ja/tutorial/developer.html">for Developer</a></li>
+			</ul>
+		</li>
+		<li class="hd-environment"><a href="../../../../../../ja/environment/index.html">Environment</a>
+			<ul>
+				<li class="hd-install"><a href="../../../../../../ja/environment/setup/index.html">Setup</a></li>
+				<li class="hd-upgrade"><a href="../../../../../../ja/environment/upgrade/index.html">Upgrade</a></li>
+			</ul>
+		</li>
+		<li class="hd-manual"><a href="../../../../../../ja/manual/index.html">Manual</a></li>
+	</ul>
+
+</div>
+
+</div>
+</body>
+</html>

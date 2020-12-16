@@ -1,0 +1,246 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja" lang="ja" >
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<meta http-equiv="Content-Style-Type" content="text/css" />
+	<meta name="keywords" content="DBFlute,ConditionBean,checkInvalidQuery,無効な条件のチェック,nullチェック,引数チェック,全件検索チェック" />
+	<link rel="stylesheet" type="text/css" href="../../../../../../css/sub.css" />
+	<!--[if IE 6.0]>
+		<link rel="stylesheet" type="text/css" href="../../../../../../css/cb/sub.css" />
+	<![endif]--> 
+	<title>CheckInvalidQuery | DBFlute</title>
+</head>
+<body>
+<div id="container" class="ct-manual">
+
+<div id="mainbar">
+<div id="header">
+	<div class="navi-upper"><a href="../../../../../../ja/sitemap.html">SiteMap</a>|<a href="http://d.hatena.ne.jp/jflute/">Author's Blog</a></div>
+	<div class="navi-main">
+	<ul>
+		<li class="hd-introduction"><a href="../../../../../../ja/introduction/index.html"><img src="../../../../../../image/parts/navi/link-intro.png" alt="Introduction" width="75" height="32" /></a></li>
+		<li class="hd-tutorial"><a href="../../../../../../ja/tutorial/index.html"><img src="../../../../../../image/parts/navi/link-tuto.png" alt="Tutorial" width="56" height="24" /></a>
+			<ul>
+				<li class="hd-architect"><a href="../../../../../../ja/tutorial/architect.html"><img src="../../../../../../image/parts/navi/link-arch.png" alt="for Architect" width="80" height="24" /></a></li>
+				<li class="hd-developer"><a href="../../../../../../ja/tutorial/developer.html"><img src="../../../../../../image/parts/navi/link-dev.png" alt="for Developer" width="87" height="24" /></a></li>
+			</ul>
+		</li>
+		<li class="hd-environment"><a href="../../../../../../ja/environment/index.html"><img src="../../../../../../image/parts/navi/link-env.png" alt="Environment" width="84" height="25" /></a>
+			<ul>
+				<li class="hd-install"><a href="../../../../../../ja/environment/setup/index.html"><img src="../../../../../../image/parts/navi/link-setup.png" alt="Setup" width="42" height="24" /></a></li>
+				<li class="hd-upgrade"><a href="../../../../../../ja/environment/upgrade/index.html"><img src="../../../../../../image/parts/navi/link-upgrade.png" alt="Upgrade" width="61" height="25" /></a></li>
+			</ul>
+		</li>
+		<li class="hd-manual"><a href="../../../../../../ja/manual/index.html"><img src="../../../../../../image/parts/navi/link-manual.png" alt="Manual" width="62" height="25" /></a></li>
+	</ul>
+	</div>
+</div>
+
+<div id="content">
+	<h1>CheckInvalidQuery</h1>
+	<ul class="indexlist">
+		<li><a href="#overview">概要</a>
+			<ul>
+				<li><a href="#11xchanged">1.1.x (Java8版) より変わっています</a></li>
+				<li><a href="#basicconcept">基本概念</a></li>
+				<li><a href="#bhvcheck">Behavior自体にもチェックが</a></li>
+				<li><a href="#dbfluteconfig">一律の設定</a></li>
+			</ul>
+		</li>
+		<li><a href="#howto">実装方法</a>
+			<ul>
+				<li><a href="#implflow">実装の流れ</a></li>
+			</ul>
+		</li>
+		<li><a href="#methodspec">メソッド仕様</a>
+			<ul>
+				<li><a href="#multiplevalue">複数の条件値を登録する条件</a></li>
+			</ul>
+		</li>
+	</ul>
+
+	<h2 id="overview">概要</h2>
+	<h3 id="11xchanged">1.1.x (Java8版) より変わっています</h3>
+	<p>
+		1.1.x (Java8版) より、デフォルトでCheckInvalidQueryが有効になっています。nullや空文字の条件値は例外です。
+		また、メソッド名も少し変わっています。
+	</p>
+	<dl class="longkeymainlist">
+		<dt>cb.ignoreNullOrEmptyQuery()</dt><dd>nullと空文字を無視する (例外にしない)</dd>
+		<dt>cb.checkNullOrEmptyQuery()</dt><dd>nullと空文字を例外にする (挙動をデフォルトに戻す)</dd>
+	</dl>
+	<h3 id="basicconcept">基本概念</h3>
+	<p>
+		ConditionBeanの絞り込み条件にて、無効な条件値(nullなど)を設定した場合に例外にします。
+	</p>
+	<p>
+		通常、Query の絞り込み条件の設定では、無効な条件値は "設定されなかったのと同じ"
+		という扱いになり、例外にはならず無視されます。(ConditionBean の基本仕様)
+	</p>
+	<div class="relatedpage"><a href="../howto.html#basicspec">ConditionBeanの使い方 - 基本仕様</a></div>
+	<p>
+		無効な条件値を例外として扱いたい場合に、この機能を使うことで実現できます。"その ConditionBean
+		で利用する条件値で無効なものは業務的に存在しない(やってこない)"
+		ということが大前提で、例えば "このテーブルは件数が膨大なので間違っても全件検索したくない"
+		というような場合に有効です。(すぐにわかる原因とはいえ、例えば 1000
+		万件レコードのテーブルに無条件の検索をしてしまうと、処理がすぐに戻ってこないのでややこしいものです)
+	</p>
+	<p>
+		ただ、基本的には ConditionBean に設定する前にしっかり null
+		チェック(無効値チェック)していれば全く問題ありませんし、本来そうするべきと考えられます。
+		<em class="keyword">チェックは早い段階であればあるほどデバッグがしやすく</em>、
+		また、値の安全性が確保されるためチェック以降のロジックがシンプルに実装できるようになります。ましてや、ConditionBean
+		以外のロジックも存在するのであれば、ConditionBean だけをチェックしても仕方ありません。
+		そういうことから、<em class="keyword">この機能を外部からのデータのチェックロジックの代わりにするのは推奨されません</em>。
+	</p>
+	<p>
+		既に無効な条件値であることが明示的にチェックされているのであれば、この機能を使う必要は基本的にありません。
+		敢えて使うとなれば、<em class="keyword">チェックロジックが間違っているときのための保険のためのチェック</em>
+		としての利用が想定されています。
+	</p>
+	<p>
+		こういったことから、<em class="keyword">対象テーブルの件数が膨大で、かつ、外部から来る条件値とその条件値のチェックロジック自体が不安に思えるような場合</em>
+		において、"より堅く実装する" という意味合いでこの機能を利用すると良いでしょう。
+	</p>
+	<h3 id="bhvcheck">Behavior自体にもチェックが</h3>
+	<p>
+		例えば selectEntity() や queryDelete() のような、そもそも "条件なし実行"
+		が(デフォルトでは)許されていない Behavior メソッドを利用する場合は、このチェック機能を使う意義は薄れます。
+		その場合、別途条件が付与されていても検索対象となる件数が多いというような場合に有効です。
+	</p>
+	<div class="relatedpage"><a href="../../behavior/select/selectentity.html">Behavior - selectEntity(cb)</a></div>
+	<div class="relatedpage"><a href="../../behavior/update/querydelete.html">Behavior - queryDelete(cb)</a></div>
+	<h3 id="dbfluteconfig">一律の設定</h3>
+	<p>
+		この機能を利用せず一律の設定で無効な値を例外にしたい場合は、DBFluteConfig を利用します。
+	</p>
+	<div class="relatedpage"><a href="../../runtime/allcommon/dbfluteconfig.html#invalidquerychecked">DBFluteConfig - invalidQueryChecked</a></div>
+
+	<h2 id="howto">実装方法</h2>
+	<h3 id="implflow">実装の流れ</h3>
+	<p>
+		絞り込み条件などを設定する前に、ConditionBean の checkInvalidQuery() を呼び出します。
+	</p>
+<pre><span class="codetitle">e.g. ConditionBeanに絞り込み条件が設定されているかどうか (Eclipseでコード補完) @Java</span><code>
+MemberCB cb = <span class="keyword">new</span> MemberCB();
+cb.chIQ <span class="comment">// .chIQ と打って enter</span>
+--
+cb.<span class="point">checkInvalidQuery()</span>
+cb.query().setMemberId_Equal(<span class="keyword">null</span>); <span class="comment">// 例外になる</span>
+</code></pre>
+
+	<h2 id="methodspec">メソッド仕様</h2>
+	<p>
+		メソッドを呼び出した後の Query 呼び出しのみ設定が有効になります。
+	</p>
+	<h3 id="multiplevalue">複数の条件値を登録する条件</h3>
+	<p>
+		例えば、FromTo, DateFromTo や LikeSearch の SplitBy などの "一つのカラムに対して複数の条件値を登録する条件"
+		の場合は、<em class="keyword">全ての値が無効な場合にのみ無効と判断</em>
+		され例外となります。<span class="frm">@since 0.9.7.9</span>
+	</p>
+	<div class="relatedpage"><a href="../query/fromto.html">FromTo</a></div>
+	<div class="relatedpage"><a href="../query/datefromto.html">DateFromTo</a></div>
+	<div class="relatedpage"><a href="../query/likesearch.html#split">LikeSearch - SplitBy</a></div>
+	<p>
+		なお、サブクエリ自体は、ここで言う "一つのカラムに対して複数の条件値を登録する条件"
+		には該当しません。例えば、InScopeRelation
+		などは解釈次第でそのように受け取れますが、サブクエリの条件はあくまで
+		"一つのカラムに対して別のクエリ(サブクエリ)を登録する条件"
+		という扱いになります。(もちろん、サブクエリ内の一つ一つのそれぞれの条件には該当します)
+	</p>
+
+</div>
+</div>
+
+<div id="sidebar">
+	<div class="logo"><a href="../../../../../../"><img src="../../../../../../image/parts/logo.png" alt="dbflute-logo" width="240" height="110" /></a></div>
+<ul>
+		<li><a href="../../../../../../ja/manual/function/generator/index.html">自動生成ツール</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/generator/client/index.html">DBFluteクライアント</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/engine/index.html">DBFluteエンジン</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/index.html">DBFluteタスク</a>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/generator/task/generate/index.html">Generate</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/sql2entity/index.html">Sql2Entity</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/generator/task/replaceschema/index.html">ReplaceSchema</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/manage/index.html">Manage</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/doc/schemahtml.html">SchemaHTML</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/function/ormapper/index.html">O/Rマッパ</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/ormapper/behavior/index.html">Behavior</a></li>
+				<li><a href="../../../../../../ja/manual/function/ormapper/conditionbean/index.html">ConditionBean</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/ormapper/outsidesql/index.html">OutsideSql</a></li>
+				<li><a href="../../../../../../ja/manual/function/ormapper/entity/index.html">Entity</a></li>
+				<li><a href="../../../../../../ja/manual/function/ormapper/runtime/index.html">DBFluteランタイム</a></li>
+			</ul>
+		</li>
+		<li>
+			<a href="../../../../../../ja/manual/function/genbafit/index.html">現場フィット</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/genbafit/implfit/index.html">アプリ実装の全体最適</a></li>
+				<li><a href="../../../../../../ja/manual/function/genbafit/projectfit/index.html">プロジェクト構成対応</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/genbafit/runtimefit/index.html">実行時共通要件の実現</a></li>
+				<li><a href="../../../../../../ja/manual/function/genbafit/deprecatedfit/index.html">非推奨な構造フォロー</a></li>
+				<li><a href="../../../../../../ja/manual/function/genbafit/dbflutefit/index.html">DBFluteサポート</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/function/helper/index.html">支援ツール</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/generator/intro/index.html">DBFlute Intro</a></li>
+				<li><a href="../../../../../../ja/manual/function/helper/emecha/index.html">EMecha (Eclipse Plugin)</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/helper/maven/index.html">Maven DBFlute Plugin</a></li>
+				<li><a href="../../../../../../ja/manual/function/helper/saflute/index.html">SAFlute</a></li>
+				<li><a href="../../../../../../ja/manual/function/helper/utflute/index.html">UTFlute</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/reference/index.html">リファレンス</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/reference/dbway/index.html">DBMSごとの取扱い</a></li>
+				<li><a href="../../../../../../ja/manual/reference/diway/index.html">DIコンテナごとの取扱い</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/reference/dfprop/index.html">DBFluteプロパティ</a></li>
+				<li><a href="../../../../../../ja/manual/reference/dictionary/index.html">DBFlute用語集</a></li>
+				<li><a href="../../../../../../ja/manual/reference/example/index.html">DBFlute Example</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/reference/faq/index.html">FAQ</a></li>
+				<li><a href="../../../../../../ja/manual/reference/troubleshooting/index.html">トラブルシューティング</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/topic/index.html">トピック</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/topic/dbdesign/index.html">DB設計</a></li>
+				<li><a href="../../../../../../ja/manual/topic/programming/index.html">プログラミング</a></li>
+				<li><a href="../../../../../../ja/manual/topic/friends/index.html">他のフレームワーク</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/topic/office/index.html">事務的な話</a></li>
+				<li><a href="../../../../../../ja/manual/topic/dbflutenet/index.html">DBFlute.NET</a></li>
+			</ul>
+		</li>
+	</ul>
+
+</div>
+
+<div id="footer">
+	<div><a href="../../../../../../ja/sitemap.html">SiteMap</a> <a href="http://d.hatena.ne.jp/jflute">Author's Blog</a><a href="https://www.seasar.org/issues/browse/DBFLUTE">BTS</a></div>
+	<ul class="footer-navi">
+		<li class="hd-introduction"><a href="../../../../../../ja/introduction/index.html">Introduction</a></li>
+		<li class="hd-tutorial"><a href="../../../../../../ja/tutorial/index.html">Tutorial</a>
+			<ul>
+				<li class="hd-architect"><a href="../../../../../../ja/tutorial/architect.html">for Architect</a></li>
+				<li class="hd-developer"><a href="../../../../../../ja/tutorial/developer.html">for Developer</a></li>
+			</ul>
+		</li>
+		<li class="hd-environment"><a href="../../../../../../ja/environment/index.html">Environment</a>
+			<ul>
+				<li class="hd-install"><a href="../../../../../../ja/environment/setup/index.html">Setup</a></li>
+				<li class="hd-upgrade"><a href="../../../../../../ja/environment/upgrade/index.html">Upgrade</a></li>
+			</ul>
+		</li>
+		<li class="hd-manual"><a href="../../../../../../ja/manual/index.html">Manual</a></li>
+	</ul>
+
+</div>
+
+</div>
+</body>
+</html>

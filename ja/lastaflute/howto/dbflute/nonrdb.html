@@ -1,0 +1,267 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja" lang="ja" >
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<meta http-equiv="Content-Style-Type" content="text/css" />
+	<meta name="keywords" content="DBFlute,LastaFlute,Java,Lean Startup,Incremental Development" />
+	<link rel="stylesheet" type="text/css" href="../../../../css/lasub.css" />
+	<!--[if IE 6.0]>
+		<link rel="stylesheet" type="text/css" href="../../../../css/cb/sub.css" />
+	<![endif]--> 
+	<title>RDBなしのとき...DBFluteは？ | LastaFlute</title>
+</head>
+<body>
+<div id="container" class="ct-default">
+
+<div id="mainbar">
+<div id="header">
+	<div class="navi-upper"><a href="../../../../ja/sitemap.html">SiteMap</a>|<a href="http://d.hatena.ne.jp/jflute/">Author's Blog</a></div>
+	<div class="navi-main">
+	<ul>
+		<li class="hd-introduction"><a href="../../../../ja/introduction/index.html"><img src="../../../../image/parts/navi/link-intro.png" alt="Introduction" width="75" height="32" /></a></li>
+		<li class="hd-tutorial"><a href="../../../../ja/tutorial/index.html"><img src="../../../../image/parts/navi/link-tuto.png" alt="Tutorial" width="56" height="24" /></a>
+			<ul>
+				<li class="hd-architect"><a href="../../../../ja/tutorial/architect.html"><img src="../../../../image/parts/navi/link-arch.png" alt="for Architect" width="80" height="24" /></a></li>
+				<li class="hd-developer"><a href="../../../../ja/tutorial/developer.html"><img src="../../../../image/parts/navi/link-dev.png" alt="for Developer" width="87" height="24" /></a></li>
+			</ul>
+		</li>
+		<li class="hd-environment"><a href="../../../../ja/environment/index.html"><img src="../../../../image/parts/navi/link-env.png" alt="Environment" width="84" height="25" /></a>
+			<ul>
+				<li class="hd-install"><a href="../../../../ja/environment/setup/index.html"><img src="../../../../image/parts/navi/link-setup.png" alt="Setup" width="42" height="24" /></a></li>
+				<li class="hd-upgrade"><a href="../../../../ja/environment/upgrade/index.html"><img src="../../../../image/parts/navi/link-upgrade.png" alt="Upgrade" width="61" height="25" /></a></li>
+			</ul>
+		</li>
+		<li class="hd-manual"><a href="../../../../ja/manual/index.html"><img src="../../../../image/parts/navi/link-manual.png" alt="Manual" width="62" height="25" /></a></li>
+	</ul>
+	</div>
+</div>
+
+<div id="content">
+	<h1>RDBなしのとき...DBFluteは？</h1>
+	<div class="relatedpage"><a href="../../index.html">LastaFluteトップページ</a></div>
+	<div class="relatedpage"><a href="../../tutorial/laimpl.html">LastaFluteの実装チュートリアル</a></div>
+	<ul class="indexlist">
+		<li><a href="#overview">概要</a>
+			<ul>
+				<li><a href="#dbfluterole">そのときのDBFluteの役割</a></li>
+				<li><a href="#dbflutetask">叩くDBFluteタスク</a></li>
+			</ul>
+		</li>
+		<li><a href="#fordoc">Docタスクのための一工夫</a>
+			<ul>
+				<li><a href="#basicinfomap">basicInfoMap.dfprop</a></li>
+				<li><a href="#databaseinfomap">databaseInfoMap.dfprop</a></li>
+				<li><a href="#additionaltablemap">additionalTableMap.dfprop</a></li>
+				<li><a href="#variousempty">その他いろいろ空っぽに</a></li>
+			</ul>
+		</li>
+	</ul>
+
+	<h2 id="overview">概要</h2>
+	<h3 id="dbfluterole">そのときのDBFluteの役割</h3>
+	<p>
+		RDBにアクセスしないアプリで LastaFlute を使う時は、DBFluteは以下のような扱いになります。
+	</p>
+	<dl class="keymainlist">
+		<dt>Runtime</dt><dd>LastaFluteやMailFluteがライブラリとして使う</dd>
+		<dt>FreeGen</dt><dd>LastaFluteでふんだんに使っているのでガンガン使う</dd>
+		<dt>JDBC</dt><dd>DocのためにJDBCが必要、ただしちょっと一工夫必要 (後述)</dd>
+		<dt>Doc</dt><dd>PropertiesHTMLを生成するために使う</dd>
+	</dl>
+	<p>
+		なので、DBFlute Runtime も DBFlute Client も DBFlute Engine も一通り必要であることには変わりません。
+	</p>
+	<p>
+		ただ、JDBC, Docタスクを叩くためにちょっとだけ一工夫が必要です。
+	</p>
+	<h3 id="dbflutetask">叩くDBFluteタスク</h3>
+	<p>
+		JDBC(21), Doc(22), FreeGen(12) を叩きます。
+	</p>
+<pre><span class="codetitle">e.g. jdbc, doc, freegen @Command</span><code>
+<span class="abbreviation">...</span>$ manage.sh 21,22,12
+</code></pre>
+	<p>
+		FreeGen はディベロッパーがよく叩きますが、JDBC, Doc は叩くタイミングがありません。
+		普段はクラスの自動生成のタイミングで自然と叩かれますが、それがないので明示的に誰かが思いついて叩かないといけません。
+		思いつきましょう。
+	</p>
+
+	<h2 id="fordoc">Docタスクのための一工夫</h2>
+	<p>
+		RDBがない状態でDocタスクを叩くために、ちょっと一工夫が必要です。
+	</p>
+	<h3 id="basicinfomap">basicInfoMap.dfprop</h3>
+	<p>
+		database を H2 database にします。<span class="frm">(ダミースキーマのために)</span>
+	</p>
+<pre><span class="codetitle">e.g. set h2 to database @basicInfoMap.dfprop</span><code>
+    ; database = h2
+</code></pre>
+	<h3 id="databaseinfomap">databaseInfoMap.dfprop</h3>
+	<p>
+		インメモリのダミースキーマ (dummydb) を定義します。
+	</p>
+<pre><span class="codetitle">e.g. set h2 to database settings @databaseInfoMap.dfprop</span><code>
+    ; driver   = org.h2.Driver
+    ; url      = jdbc:h2:mem:dummydb
+    ; schema   = 
+    ; user     = dummydb
+    ; password = dummydb
+</code></pre>
+	<h3 id="additionaltablemap">additionalTableMap.dfprop</h3>
+	<p>
+		ダミーテーブルをひとつだけ additionalTable として定義します。
+	</p>
+	<p>
+		additionalTableMap.dfprop を作成して...
+	</p>
+<pre><span class="codetitle">e.g. make additionalTableMap.dfprop in dfprop @Directory</span><code>
+dfprop
+ |-<span class="point">additionalTableMap.dfprop</span>
+ |-basicInfoMap.dfprop
+ |-databaseInfoMap.dfprop
+</code></pre>
+	<p>
+		以下の内容を記載します。<span class="frm">(JDBCタスクは、テーブルが一つ必要なため)</span>
+	</p>
+<pre><span class="codetitle">e.g. define dummy table @additionalTableMap.dfprop</span><code>
+<span class="comment"># /---------------------------------------------------------------------------
+# additionalTableMap: (NotRequired - Default map:{})
+# 
+# This property is valid at only JDBC task.
+# You should use this when JDBC can not provide table information
+# and when you have no table but call stored procedures only.
+# 
+# The element 'columnMap' is only required in table elements. 
+# The element 'type' is only required in column elements. 
+# 
+# Specification:
+# map: {
+#     [table-name] = map:{
+#         columnMap = map:{
+#             [column-name] = map:{
+#                 type = [column JDBC type] ; dbType = [column DB type]
+#                 ; required = [true or false] ; size = [column size]
+#                 ; primaryKey = [true or false] ; pkName = [PK constraint name]
+#                 ; autoIncrement = [true or false]
+#                 ; default = [default value] ; comment = [column comment]
+#             }
+#         }
+#         ; comment = [table comment]
+#     }
+# }
+# 
+# *The line that starts with '#' means comment-out.
+#</span>
+map:{
+    ; <span class="point">DUMMY_MEMBER</span> = map:{
+        ; columnMap = map:{
+            ; DUMMY_ID = map:{
+                ; type = INTEGER ; dbType = INTEGER
+                ; required = true ; primaryKey = true ; autoIncrement = true
+            }
+            ; DUMMY_NAME = map:{ type = VARCHAR ; required = true ; size = 123 }
+            ; DUMMY_DATE = map:{ type = DATE }
+        }
+    }
+}
+<span class="comment"># ----------------/
+#
+# *Refer to typeMappingMap.dfprop for JDBC type reference.</span>
+</code></pre>
+	<h3 id="variousempty">その他いろいろ空っぽに</h3>
+	<p>
+		必須ではありませんが、何か入ってると動かない可能性もあるので空っぽにしておきましょう。
+	</p>
+	<dl class="lolongkeymainlist">
+		<dt>classificationDefinitionMap.dfprop</dt><dd>map:{} に</dd>
+		<dt>classificationDeploymentMap.dfprop</dt><dd>map:{} に</dd>
+		<dt>commonColumnMap.dfprop</dt><dd>map:{} に</dd>
+		<dt>playsqlディレクトリ</dt><dd>ディレクトリだけにして.gitkeep</dd>
+	</dl>
+
+</div>
+</div>
+
+<div id="sidebar">
+	<div class="logo"><a href="../../../../"><img src="../../../../image/parts/logo.png" alt="dbflute-logo" width="240" height="110" /></a></div>
+<ul>
+		<li><a href="../../../../ja/lastaflute/index.html">LastaFluteトップページ</a>
+			<ul>
+				<li><a href="../../../../ja/lastaflute/index.html#about">LastaFluteとは？</a></li>
+				<li><a href="../../../../ja/lastaflute/index.html#lacode">LastaFluteのコード</a></li>
+				<li class="upper-space"><a href="../../../../ja/lastaflute/index.html#quicktrial">動かしてみよう</a></li>
+				<li><a href="../../../../ja/lastaflute/index.html#newproject">新プロジェクト</a></li>
+				<li><a href="https://github.com/lastaflute/lastaflute">LastaFlute | Github</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../ja/lastaflute/tutorial/laimpl.html">LastaFlute実装チュートリアル</a>
+			<ul>
+				<li><a href="../../../../ja/lastaflute/tutorial/laimpl.html#style">実装スタイル</a></li>
+				<li><a href="../../../../ja/lastaflute/tutorial/laimpl.html#prepare">まず準備</a></li>
+				<li class="upper-space"><a href="../../../../ja/lastaflute/tutorial/laimpl.html#acquaintanceship">ディベロッパーの心得</a></li>
+				<li><a href="../../../../ja/lastaflute/tutorial/laimpl.html#tenclause">ディベロッパーの十か条</a></li>
+				<li><a href="../../../../ja/lastaflute/tutorial/faqimpl.html">LastaFluteの実装FAQ</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../ja/lastaflute/howto/action/index.html">LastaFlute の Action</a>
+			<ul>
+				<li><a href="../../../../ja/lastaflute/howto/action/makeashtml.html">Actionの作り方 (HTML)</a></li>
+				<li><a href="../../../../ja/lastaflute/howto/action/makeasjson">Actionの作り方 (JSON)</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../ja/lastaflute/howto/impldesign/actiondesign.html">Actionの実装デザイン</a>
+			<ul>
+				<li><a href="../../../../ja/lastaflute/howto/impldesign/logicdesign.html">Logicの実装デザイン</a></li>
+				<li><a href="../../../../ja/lastaflute/howto/impldesign/beandesign.html">Beanの実装デザイン</a></li>
+				<li><a href="../../../../ja/lastaflute/howto/impldesign/jsondesign.html">JSON APIのデザイン</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../ja/lastaflute/howto/upgrade/index.html">LastaFluteのアップグレード</a>
+			<ul>
+				<li><a href="../../../../ja/lastaflute/howto/upgrade/lachangelog.html">ChangeLog</a></li>
+				<li><a href="../../../../ja/lastaflute/howto/upgrade/migration/index.html">移行情報(注意点など)</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../ja/lastaflute/lastadi/index.html">Lasta Diトップページ</a>
+			<ul>
+				<li><a href="../../../../ja/lastaflute/lastadi/index.html#twocomp">Two Components</a></li>
+				<li><a href="../../../../ja/lastaflute/lastadi/dixmlexp.html">Di xml の表現</a></li>
+				<li><a href="https://github.com/lastaflute/lasta-di">Lasta Di | Github</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../ja/tutorial/onjava8.html">DBFlute on Java8</a>
+			<ul>
+				<li><a href="../../../../ja/tutorial/onjava8.html#select">とにかく検索は？</a></li>
+				<li><a href="../../../../ja/tutorial/onjava8.html#completion">さあ、補完してみよう！</a></li>
+			</ul>
+		</li>
+	</ul>
+
+</div>
+
+<div id="footer">
+	<div><a href="../../../../ja/sitemap.html">SiteMap</a> <a href="http://d.hatena.ne.jp/jflute">Author's Blog</a><a href="https://www.seasar.org/issues/browse/DBFLUTE">BTS</a></div>
+	<ul class="footer-navi">
+		<li class="hd-introduction"><a href="../../../../ja/introduction/index.html">Introduction</a></li>
+		<li class="hd-tutorial"><a href="../../../../ja/tutorial/index.html">Tutorial</a>
+			<ul>
+				<li class="hd-architect"><a href="../../../../ja/tutorial/architect.html">for Architect</a></li>
+				<li class="hd-developer"><a href="../../../../ja/tutorial/developer.html">for Developer</a></li>
+			</ul>
+		</li>
+		<li class="hd-environment"><a href="../../../../ja/environment/index.html">Environment</a>
+			<ul>
+				<li class="hd-install"><a href="../../../../ja/environment/setup/index.html">Setup</a></li>
+				<li class="hd-upgrade"><a href="../../../../ja/environment/upgrade/index.html">Upgrade</a></li>
+			</ul>
+		</li>
+		<li class="hd-manual"><a href="../../../../ja/manual/index.html">Manual</a></li>
+	</ul>
+
+</div>
+
+</div>
+</body>
+</html>

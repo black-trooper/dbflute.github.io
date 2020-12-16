@@ -1,0 +1,342 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja" lang="ja" >
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<meta http-equiv="Content-Style-Type" content="text/css" />
+	<meta name="keywords" content="DBFlute,LastaFlute,Java,Lean Startup,Incremental Development" />
+	<link rel="stylesheet" type="text/css" href="../../../../css/lasub.css" />
+	<!--[if IE 6.0]>
+		<link rel="stylesheet" type="text/css" href="../../../../css/cb/sub.css" />
+	<![endif]--> 
+	<title>lastafluteMap.dfprop | LastaFlute</title>
+</head>
+<body>
+<div id="container" class="ct-default">
+
+<div id="mainbar">
+<div id="header">
+	<div class="navi-upper"><a href="../../../../ja/sitemap.html">SiteMap</a>|<a href="http://d.hatena.ne.jp/jflute/">Author's Blog</a></div>
+	<div class="navi-main">
+	<ul>
+		<li class="hd-introduction"><a href="../../../../ja/introduction/index.html"><img src="../../../../image/parts/navi/link-intro.png" alt="Introduction" width="75" height="32" /></a></li>
+		<li class="hd-tutorial"><a href="../../../../ja/tutorial/index.html"><img src="../../../../image/parts/navi/link-tuto.png" alt="Tutorial" width="56" height="24" /></a>
+			<ul>
+				<li class="hd-architect"><a href="../../../../ja/tutorial/architect.html"><img src="../../../../image/parts/navi/link-arch.png" alt="for Architect" width="80" height="24" /></a></li>
+				<li class="hd-developer"><a href="../../../../ja/tutorial/developer.html"><img src="../../../../image/parts/navi/link-dev.png" alt="for Developer" width="87" height="24" /></a></li>
+			</ul>
+		</li>
+		<li class="hd-environment"><a href="../../../../ja/environment/index.html"><img src="../../../../image/parts/navi/link-env.png" alt="Environment" width="84" height="25" /></a>
+			<ul>
+				<li class="hd-install"><a href="../../../../ja/environment/setup/index.html"><img src="../../../../image/parts/navi/link-setup.png" alt="Setup" width="42" height="24" /></a></li>
+				<li class="hd-upgrade"><a href="../../../../ja/environment/upgrade/index.html"><img src="../../../../image/parts/navi/link-upgrade.png" alt="Upgrade" width="61" height="25" /></a></li>
+			</ul>
+		</li>
+		<li class="hd-manual"><a href="../../../../ja/manual/index.html"><img src="../../../../image/parts/navi/link-manual.png" alt="Manual" width="62" height="25" /></a></li>
+	</ul>
+	</div>
+</div>
+
+<div id="content">
+	<h1>lastafluteMap.dfprop</h1>
+	<div class="relatedpage"><a href="../../index.html">LastaFlute</a></div>
+	<ul class="indexlist">
+		<li><a href="#about">Lasta の dfprop とは？</a></li>
+		<li><a href="#basic">基本プロパティ</a></li>
+		<li><a href="#env">環境プロパティ</a></li>
+		<li><a href="#appmap">appMapプロパティ</a></li>
+		<li><a href="#freegen">freeGenListプロパティ</a></li>
+		<li><a href="#prophtml">propertiesHtmlListプロパティ</a></li>
+		<li><a href="#overridemap">規約の微調整 <span class="frm">(overrideMap)</span></a></li>
+		<li><a href="#gencls">区分値の自動生成</a></li>
+	</ul>
+
+	<h2 id="about">Lasta の dfprop とは？</h2>
+	<p>
+		LastaFluteの規約をDBFluteに適用させる dfprop です。
+	</p>
+	<p>
+		例えば、FreeGenの設定、PropertiesHTMLの設定など、直接 DBFlute に設定すると dfprop
+		が膨張して管理が煩雑になってしまいますが、LastaFluteの規約をDBFluteに組み込み、簡易な設定で反映させられるようにしています。
+	</p>
+<pre><span class="codetitle">e.g. Maihamaプロジェクトの lastafluteMap.dfprop @lastafluteMap.dfprop</span><code>
+<span class="keyword">map:</span>{
+    <span class="comment"># your service name, camel case, initial uncapitalised</span>
+    ; serviceName = <span class="literal">maihama</span>
+
+    <span class="comment"># package for your domain name, e.g. com.example</span>
+    ; domainPackage = <span class="literal">org.docksidestage</span>
+
+    <span class="comment"># settings for common project of all web applications</span>
+    ; commonMap = <span class="keyword">map:</span>{
+        ; path = <span class="literal">..</span>
+        ; freeGenList = <span class="keyword">list:</span>{ env ; config ; label ; message ; mail ; template ; doc ; namedcls }
+        ; propertiesHtmlList = <span class="keyword">list:</span>{ env ; config ; label ; message }
+    }
+
+    <span class="comment"># settings for web applications</span>
+    ; appMap = <span class="keyword">map:</span>{
+        ; <span class="literal">dockside</span> = <span class="keyword">map:</span>{
+            ; path = <span class="literal">../../maihama-dockside</span>
+            ; freeGenList = <span class="keyword">list:</span>{ env ; config ; label ; message ; mail ; template ; html ; doc ; appcls ; namedcls }
+            ; propertiesHtmlList = <span class="keyword">list:</span>{ env ; config ; label ; message }
+        }
+        ; <span class="literal">hangar</span> = <span class="keyword">map:</span>{
+            ; path = <span class="literal">../../maihama-hangar</span>
+            ; freeGenList = <span class="keyword">list:</span>{ env ; config ; label ; message ; mail ; template ; doc ; appcls ; namedcls }
+            ; propertiesHtmlList = <span class="keyword">list:</span>{ env ; config ; label ; message }
+        }
+    }
+
+    <span class="comment"># you can override (several) default settings like this:
+    #; overrideMap = map:{
+    #    ; dockside.freeGen.mail.targetDir = ./playsql/data/mail
+    #}</span>
+}
+</code></pre>
+
+	<h2 id="basic">基本プロパティ</h2>
+	<dl class="shortkeymainlist">
+		<dt>serviceName</dt><dd>プロジェクト全体のサービス名、Maihamaプロジェクトなら maihama</dd>
+		<dt>domainPackage</dt><dd>サービスのドメイン部分を表すパッケージ <span class="frm">(この直下に app や mylasta など)</span></dd>
+	</dl>
+
+	<h2 id="env">環境プロパティ</h2>
+	<dl class="shortkeymainlist">
+		<dt>environmentList</dt><dd>デプロイ環境のリスト、結合と本番の二つなら integration ; production</dd>
+		<dt>isUseLastaEnv</dt><dd>LastaEnvスタイルか？ <span class="frm">(Exampleテンプレートではtrue)</span></dd>
+	</dl>
+	<p>
+		もし、デプロイ環境が増えたら、environmentList に環境を追加します。
+	</p>
+	<div class="relatedpage"><span class="working"><!-- <a href="../structure/builddeploy.html#addenvtodfprop"> -->2. lastafluteMap.dfprop にて env を追加<!-- </a> --></span></div>
+	<p>
+		Maven の Profile 機能などを使って環境切り替えを実現する場合は、isUseLastaEnv を false
+		にしますが。LastaFluteのやり方としては、true がオススメです。
+	</p>
+
+	<h2 id="appmap">appMapプロパティ</h2>
+	<p>
+		ここでは、アプリごとの FreeGen や PropertiesHTML の設定などをしていきます。
+	</p>
+<pre><span class="codetitle">e.g. Maihamaプロジェクトの lastafluteMap.dfprop @lastafluteMap.dfprop</span><code>
+<span class="keyword">map:</span>{
+<span class="comment"># settings for common project of all web applications</span>
+; commonMap = <span class="keyword">map:</span>{
+    ; path = <span class="literal">..</span>
+    ; freeGenList = <span class="keyword">list:</span>{ env ; config ; label ; message ; mail ; template ; doc ; namedcls }
+    ; propertiesHtmlList = <span class="keyword">list:</span>{ env ; config ; label ; message }
+}
+
+<span class="comment"># settings for web applications</span>
+; appMap = <span class="keyword">map:</span>{
+    ; <span class="literal">dockside</span> = <span class="keyword">map:</span>{
+        ; path = <span class="literal">../../maihama-dockside</span>
+        ; freeGenList = <span class="keyword">list:</span>{ env ; config ; label ; message ; mail ; template ; html ; doc ; appcls ; namedcls }
+        ; propertiesHtmlList = <span class="keyword">list:</span>{ env ; config ; label ; message }
+    }
+    ; <span class="literal">hangar</span> = <span class="keyword">map:</span>{
+        ; path = <span class="literal">../../maihama-hangar</span>
+        ; freeGenList = <span class="keyword">list:</span>{ env ; config ; label ; message ; mail ; template ; doc ; appcls ; namedcls }
+        ; propertiesHtmlList = <span class="keyword">list:</span>{ env ; config ; label ; message }
+    }
+}
+</code></pre>
+	<p>
+		マルチプロジェクトの場合は、commonMap も含みます。そのまま commonプロジェクトの設定をします。
+		path は、DBFluteクライアントが common にあれば一個上に行くだけなので ".." です。
+	</p>
+	<p>
+		appMapの方は、アプリ名 (maihama-dockside なら dockside) を map
+		のキーにします。path は、DBFluteクライアントからの相対パスでそのアプリのプロジェクトルートまで少し旅に出ます。
+	</p>
+
+	<h2 id="freegen">freeGenListプロパティ</h2>
+	<p>
+		そのアプリで、FreeGenで自動生成するものを指定します。
+	</p>
+	<dl class="shoshortkeymainlist">
+		<dt>env</dt><dd>[app]_env.propertiesのインターフェース自動生成</dd>
+		<dt>config</dt><dd>[app]_config.propertiesのインターフェース自動生成</dd>
+		<dt>label</dt><dd>[app]_label.propertiesのインターフェース自動生成</dd>
+		<dt>message</dt><dd>[app]_message.propertiesのインターフェース自動生成</dd>
+		<dt>mail</dt><dd>MailFlute の Postcard クラスの自動生成 <span class="frm">(src/main/resources/mail配下のdfmail)</span></dd>
+		<dt>template</dt><dd>汎用テンプレート対応のクラスの自動生成 <span class="frm">(src/main/resources配下のdfpm)</span></dd>
+		<dt>jsp @ *</dt><dd>JSPのパス定義の自動生成 <span class="frm">(WEB-INF/view配下の .jsp と.html)</span></dd>
+		<dt>html @ *</dt><dd>HTMLテンプレートのパス定義の自動生成 <span class="frm">(WEB-INF/view配下の .html)</span></dd>
+		<dt>doc</dt><dd>LastaDocの自動生成 <span class="frm">(dbflute_[app]db/output/lasta配下に出力)</span></dd>
+		<dt>appcls</dt><dd>アプリ区分値の自動生成 <span class="frm">(AppCDefとして出力、アプリプロジェクトのみ)</span></dd>
+		<dt>namedcls</dt><dd>名前付き区分値の自動生成 <span class="frm">([Named]CDefとして出力、commonでも可能)</span></dd>
+	</dl>
+	<p>
+		"@" (あっとまーく) の付いているものは、commonプロジェクトでは不要です。
+	</p>
+	<p>
+		"*" の付いているものは、どちらか一つ、もしくは、JSON API なら両方とも不要です。
+	</p>
+	<p>
+		基本、それ以外はすべて指定しておきましょう。例えば、mail や template などは仮に使わないとしても、対象となるファイルを作らなければいいだけです。
+	</p>
+
+	<h2 id="prophtml">propertiesHtmlListプロパティ</h2>
+	<p>
+		そのアプリで、PropertiesHTMLの対象とするものを指定します。
+	</p>
+	<dl class="shoshortkeymainlist">
+		<dt>env</dt><dd>[app]_env.propertiesのインターフェース自動生成</dd>
+		<dt>config</dt><dd>[app]_config.propertiesのインターフェース自動生成</dd>
+		<dt>label</dt><dd>[app]_label.propertiesのインターフェース自動生成</dd>
+		<dt>message</dt><dd>[app]_message.propertiesのインターフェース自動生成</dd>
+	</dl>
+	<p>
+		基本、すべて指定しましょう。
+	</p>
+
+	<h2 id="overridemap">規約の微調整 <span class="frm">(overrideMap)</span></h2>
+	<p>
+		DBFluteにて組み込まれている規約をちょっと違うものにしたい場合...
+	</p>
+	<p>
+		例えば、"MailFluteのメールテンプレートをDB管理にしたいけど、テストデータをXLSやTSVで管理するのはつらいので、ReplaceSchemaで外部ファイル読み込みで
+		.dfmail ファイルののままで管理したいけど、置き場所が違うので自動生成できなくなっちゃう"
+		というような場合、overrideMap を使うことで置き場所を変更できます。
+	</p>
+	<p>
+		まず、置き場所を例えば playsql/data/ut/mail にしたとします。
+	</p>
+<pre><span class="codetitle">e.g. Maihamaプロジェクトの lastafluteMap.dfprop @Directory</span><code>
+dbflute_maihamadb
+ |-playsql
+ |  |-data
+ |  |  |-ut
+ |  |  |  |-<span class="point">mail</span>
+ |  |  |  |  |-welcome_to_sea.dfmail
+ |  |  |  |  |-welcome_to_land.dfmail
+ |  |  |  |-<span class="abbreviation">...</span>
+ |  |  |-<span class="abbreviation">...</span>
+ |  |-<span class="abbreviation">...</span>
+ |-<span class="abbreviation">...</span>
+</code></pre>
+	<p>
+		そして、ReplaceSchema の方の設定で、XLSやTSVからそれらの.dfmailのテキスト内容をDBに登録するようにします。
+		<span class="frm">(loadingControlMap.dataprop で largeTextFileMap を定義して、XLSやTSVでパス指定)</span>
+	</p>
+	<div class="relatedpage"><a href="../../../manual/function/generator/task/replaceschema/loaddata.html#largetext">ReplaceSchema - ラージテキストの登録 (外部ファイル </a></div>
+	<p>
+		でもって、lastafluteMap.dfprop にて overrideMap
+		を指定します。mail のディレクトリを指定するプロパティは、[app].freeGen.mail.targetDir です。 
+	</p>
+<pre><span class="codetitle">e.g. lastafluteMap.dfprop で overrideMap を定義、メールの場所を変更 @lastafluteMap.dfprop</span><code>
+<span class="comment"># settings for web applications</span>
+; appMap = <span class="keyword">map:</span>{
+    ; <span class="literal">dockside</span> = <span class="keyword">map:</span>{
+        ; path = <span class="literal">../../maihama-dockside</span>
+        ; freeGenList = <span class="keyword">list:</span>{ env ; config ; label ; message ; mail ; template ; html ; doc ; appcls ; namedcls }
+        ; propertiesHtmlList = <span class="keyword">list:</span>{ env ; config ; label ; message }
+    }
+    ; <span class="literal">hangar</span> = <span class="keyword">map:</span>{
+        ; path = <span class="literal">../../maihama-hangar</span>
+        ; freeGenList = <span class="keyword">list:</span>{ env ; config ; label ; message ; mail ; template ; doc ; appcls ; namedcls }
+        ; propertiesHtmlList = <span class="keyword">list:</span>{ env ; config ; label ; message }
+    }
+}
+
+; <span class="point">overrideMap</span> = <span class="keyword">map:</span>{
+    ; dockside.freeGen.mail.targetDir = <span class="literal">./playsql/data/ut/mail</span>
+}
+</code></pre>
+	<p>
+		ソースコード的には、DfLastaFluteFreeGenReflector です。
+	</p>
+
+	<h2 id="gencls">区分値の自動生成</h2>
+	<p>
+		freeGenList で、appcls や namedcls を指定することで、<em class="mark">アプリ区分値</em>
+		や <em class="mark">名前付き区分値</em> を自動生成することができます。
+	</p>
+	<div class="relatedpage"><a href="./appcls.html">アプリ区分値の自動生成</a></div>
+	<div class="relatedpage"><a href="./namedcls.html">名前付き区分値の自動生成</a></div>
+
+</div>
+</div>
+
+<div id="sidebar">
+	<div class="logo"><a href="../../../../"><img src="../../../../image/parts/logo.png" alt="dbflute-logo" width="240" height="110" /></a></div>
+<ul>
+		<li><a href="../../../../ja/lastaflute/index.html">LastaFluteトップページ</a>
+			<ul>
+				<li><a href="../../../../ja/lastaflute/index.html#about">LastaFluteとは？</a></li>
+				<li><a href="../../../../ja/lastaflute/index.html#lacode">LastaFluteのコード</a></li>
+				<li class="upper-space"><a href="../../../../ja/lastaflute/index.html#quicktrial">動かしてみよう</a></li>
+				<li><a href="../../../../ja/lastaflute/index.html#newproject">新プロジェクト</a></li>
+				<li><a href="https://github.com/lastaflute/lastaflute">LastaFlute | Github</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../ja/lastaflute/tutorial/laimpl.html">LastaFlute実装チュートリアル</a>
+			<ul>
+				<li><a href="../../../../ja/lastaflute/tutorial/laimpl.html#style">実装スタイル</a></li>
+				<li><a href="../../../../ja/lastaflute/tutorial/laimpl.html#prepare">まず準備</a></li>
+				<li class="upper-space"><a href="../../../../ja/lastaflute/tutorial/laimpl.html#acquaintanceship">ディベロッパーの心得</a></li>
+				<li><a href="../../../../ja/lastaflute/tutorial/laimpl.html#tenclause">ディベロッパーの十か条</a></li>
+				<li><a href="../../../../ja/lastaflute/tutorial/faqimpl.html">LastaFluteの実装FAQ</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../ja/lastaflute/howto/action/index.html">LastaFlute の Action</a>
+			<ul>
+				<li><a href="../../../../ja/lastaflute/howto/action/makeashtml.html">Actionの作り方 (HTML)</a></li>
+				<li><a href="../../../../ja/lastaflute/howto/action/makeasjson">Actionの作り方 (JSON)</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../ja/lastaflute/howto/impldesign/actiondesign.html">Actionの実装デザイン</a>
+			<ul>
+				<li><a href="../../../../ja/lastaflute/howto/impldesign/logicdesign.html">Logicの実装デザイン</a></li>
+				<li><a href="../../../../ja/lastaflute/howto/impldesign/beandesign.html">Beanの実装デザイン</a></li>
+				<li><a href="../../../../ja/lastaflute/howto/impldesign/jsondesign.html">JSON APIのデザイン</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../ja/lastaflute/howto/upgrade/index.html">LastaFluteのアップグレード</a>
+			<ul>
+				<li><a href="../../../../ja/lastaflute/howto/upgrade/lachangelog.html">ChangeLog</a></li>
+				<li><a href="../../../../ja/lastaflute/howto/upgrade/migration/index.html">移行情報(注意点など)</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../ja/lastaflute/lastadi/index.html">Lasta Diトップページ</a>
+			<ul>
+				<li><a href="../../../../ja/lastaflute/lastadi/index.html#twocomp">Two Components</a></li>
+				<li><a href="../../../../ja/lastaflute/lastadi/dixmlexp.html">Di xml の表現</a></li>
+				<li><a href="https://github.com/lastaflute/lasta-di">Lasta Di | Github</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../ja/tutorial/onjava8.html">DBFlute on Java8</a>
+			<ul>
+				<li><a href="../../../../ja/tutorial/onjava8.html#select">とにかく検索は？</a></li>
+				<li><a href="../../../../ja/tutorial/onjava8.html#completion">さあ、補完してみよう！</a></li>
+			</ul>
+		</li>
+	</ul>
+
+</div>
+
+<div id="footer">
+	<div><a href="../../../../ja/sitemap.html">SiteMap</a> <a href="http://d.hatena.ne.jp/jflute">Author's Blog</a><a href="https://www.seasar.org/issues/browse/DBFLUTE">BTS</a></div>
+	<ul class="footer-navi">
+		<li class="hd-introduction"><a href="../../../../ja/introduction/index.html">Introduction</a></li>
+		<li class="hd-tutorial"><a href="../../../../ja/tutorial/index.html">Tutorial</a>
+			<ul>
+				<li class="hd-architect"><a href="../../../../ja/tutorial/architect.html">for Architect</a></li>
+				<li class="hd-developer"><a href="../../../../ja/tutorial/developer.html">for Developer</a></li>
+			</ul>
+		</li>
+		<li class="hd-environment"><a href="../../../../ja/environment/index.html">Environment</a>
+			<ul>
+				<li class="hd-install"><a href="../../../../ja/environment/setup/index.html">Setup</a></li>
+				<li class="hd-upgrade"><a href="../../../../ja/environment/upgrade/index.html">Upgrade</a></li>
+			</ul>
+		</li>
+		<li class="hd-manual"><a href="../../../../ja/manual/index.html">Manual</a></li>
+	</ul>
+
+</div>
+
+</div>
+</body>
+</html>

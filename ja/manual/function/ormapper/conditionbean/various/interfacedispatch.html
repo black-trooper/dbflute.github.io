@@ -1,0 +1,280 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja" lang="ja" >
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<meta http-equiv="Content-Style-Type" content="text/css" />
+	<meta name="keywords" content="DBFlute,ConditionBean,インターフェースディスパッチ,インターフェース経由,抽象実装" />
+	<link rel="stylesheet" type="text/css" href="../../../../../../css/sub.css" />
+	<!--[if IE 6.0]>
+		<link rel="stylesheet" type="text/css" href="../../../../../../css/cb/sub.css" />
+	<![endif]--> 
+	<title>CB - InterfaceDispatch | DBFlute</title>
+</head>
+<body>
+<div id="container" class="ct-manual">
+
+<div id="mainbar">
+<div id="header">
+	<div class="navi-upper"><a href="../../../../../../ja/sitemap.html">SiteMap</a>|<a href="http://d.hatena.ne.jp/jflute/">Author's Blog</a></div>
+	<div class="navi-main">
+	<ul>
+		<li class="hd-introduction"><a href="../../../../../../ja/introduction/index.html"><img src="../../../../../../image/parts/navi/link-intro.png" alt="Introduction" width="75" height="32" /></a></li>
+		<li class="hd-tutorial"><a href="../../../../../../ja/tutorial/index.html"><img src="../../../../../../image/parts/navi/link-tuto.png" alt="Tutorial" width="56" height="24" /></a>
+			<ul>
+				<li class="hd-architect"><a href="../../../../../../ja/tutorial/architect.html"><img src="../../../../../../image/parts/navi/link-arch.png" alt="for Architect" width="80" height="24" /></a></li>
+				<li class="hd-developer"><a href="../../../../../../ja/tutorial/developer.html"><img src="../../../../../../image/parts/navi/link-dev.png" alt="for Developer" width="87" height="24" /></a></li>
+			</ul>
+		</li>
+		<li class="hd-environment"><a href="../../../../../../ja/environment/index.html"><img src="../../../../../../image/parts/navi/link-env.png" alt="Environment" width="84" height="25" /></a>
+			<ul>
+				<li class="hd-install"><a href="../../../../../../ja/environment/setup/index.html"><img src="../../../../../../image/parts/navi/link-setup.png" alt="Setup" width="42" height="24" /></a></li>
+				<li class="hd-upgrade"><a href="../../../../../../ja/environment/upgrade/index.html"><img src="../../../../../../image/parts/navi/link-upgrade.png" alt="Upgrade" width="61" height="25" /></a></li>
+			</ul>
+		</li>
+		<li class="hd-manual"><a href="../../../../../../ja/manual/index.html"><img src="../../../../../../image/parts/navi/link-manual.png" alt="Manual" width="62" height="25" /></a></li>
+	</ul>
+	</div>
+</div>
+
+<div id="content">
+	<h1>CB - InterfaceDispatch</h1>
+	<ul class="indexlist">
+		<li><a href="#overview">概要</a></li>
+		<li><a href="#interface">インターフェースメソッド</a>
+			<ul>
+				<li><a href="#select">データ取得</a></li>
+				<li><a href="#query">絞り込み・ソート条件</a></li>
+				<li><a href="#pkdispatch">PKを抽象的に扱うメソッド</a></li>
+				<li><a href="#tableinfo">テーブルのメタデータ</a></li>
+				<li><a href="#nodependent">テーブルに依存しないメソッド</a></li>
+			</ul>
+		</li>
+	</ul>
+
+	<h2 id="overview">概要</h2>
+	<p>
+		アーキテクト向けの機能です。
+	</p>
+	<div class="relatedword"><a href="../../../../reference/dictionary/alphabet/wa.html#architect">Architect (アーキテクト)</a></div>
+	<p>
+		ConditionBeanには、インターフェースディスパッチ(抽象実装)ができるように、インターフェース経由で機能が利用できるメソッドが用意されています。
+	</p>
+	<p>
+		通常の利用では必要ありませんので、
+		"知ってしまったら使ってしまいそう" と思われる方は、このページは読まずに、すぐにDBFlute内の適当なページに飛んで下さい。
+	</p>
+	<div class="detailpage"><a href="../../../../topic/programming/completion/camelcase.html">DBFlute内の適当なページ</a></div>
+
+	<h2 id="interface">インターフェースメソッド</h2>
+	<p>
+		それぞれの ConditionBean は、"ConditionBean"
+		というインターフェースを実装しています。
+	</p>
+	<h3 id="select">データ取得</h3>
+	<dl class="textlist">
+		<dt>invokeSetupSelect()</dt>
+		<dd>
+			指定されたプロパティ(foreignPropertyNamePath)に対応するリレーションを SetupSelect
+			します。プロパティ名は、"." (ドット)つなぎでネストした階層を辿っていくことが可能です。
+		</dd>
+	</dl>
+	<h3 id="query">絞り込み・ソート条件</h3>
+	<p>
+		ConditionQuery も同様に "ConditionQuery" というインターフェースを実装しています。
+	</p>
+	<dl class="textlist">
+		<dt>localCQ()</dt>
+		<dd>query() で取得される ConditionQuery をインターフェース形式で取得します。</dd>
+		<dt>localCQ().invokeValue()</dt>
+		<dd>指定されたカラム名(columnFlexibleName)の ConditionValue を取得します。</dd>
+		<dd>※アプリでは基本的に必要としません。</dd>
+		<dt>localCQ().invokeQuery()</dt>
+		<dd>
+			絞り込み条件を設定します。
+			<dl class="keymainlist">
+				<dt>columnFlexibleName</dt><dd>カラム名 (Flexible)。"." (ドット)つなぎでリレーションを表現できる</dd>
+				<dt>conditionKeyName</dt><dd>比較条件のキー名 (Equal, LessThan など)</dd>
+				<dt>value</dt><dd>条件値 (Object型)</dd>
+				<dt>option</dt><dd>ConditionOption (LikeSearchOptionなど)。オーバーロード引数。</dd>
+			</dl>
+		</dd>
+		<dt>localCQ().invokeQueryEqual()</dt>
+		<dd>
+			頻度が高いと想定されている Equal に特化した invokeQuery() です。比較条件の指定がありません。
+		</dd>
+		<dt>localCQ().invokeOrderBy()</dt>
+		<dd>
+			ソート条件を設定します。
+			<dl class="keymainlist">
+				<dt>columnFlexibleName</dt><dd>カラム名 (Flexible)。"." (ドット)つなぎでリレーションを表現できる</dd>
+				<dt>isAsc</dt><dd>昇順かどうか (false なら降順)</dd>
+			</dl>
+		</dd>
+		<dt>localCQ().invokeForeignCQ()</dt>
+		<dd>
+			指定されたプロパティ(foreignPropertyName)に対応する関連テーブルの ConditionQuery
+			を取得します。プロパティ名は、"." (ドット)つなぎでネストした階層を辿っていくことが可能です。
+		</dd>
+		<dt>localCQ().invokeHasForeignCQ()</dt>
+		<dd>
+			指定されたプロパティ(foreignPropertyName)に対応する関連テーブルの ConditionQuery
+			があるかどうかを判定します。プロパティ名は、"." (ドット)つなぎでネストした階層を辿っていくことが可能です。
+		</dd>
+		<dd>※アプリでは基本的に必要としません。</dd>
+	</dl>
+	<h3 id="pkdispatch">PKを抽象的に扱うメソッド</h3>
+	<p>
+		PKのデータ型、および、単一PKなのか複合PKなのか、これらを吸収して抽象的に実装するためのメソッドが用意されています。
+	</p>
+	<dl class="textlist">
+		<dt>acceptPrimaryKeyMap()</dt>
+		<dd>
+			PrimaryKey の値が格納された Map を受け取って、等値条件を設定するメソッドです。
+			DBMeta の extractPrimaryKeyMap() を使って取得した Map を利用すれば、Entity
+			に格納されている PK の値をそのまま ConditionBean に登録できます。
+		</dd>
+		<dd>
+			<em class="keyword">[PKのカラム名] = [PKの値]</em>
+			という形式で登録されている必要があります。
+		</dd>
+		<dt>addOrderBy_PK_Asc()</dt>
+		<dd>
+			PK の昇順(Asc)で OrderBy を設定します。
+		</dd>
+		<dt>addOrderBy_PK_Desc()</dt>
+		<dd>
+			PK の降順(Desc)で OrderBy を設定します。
+		</dd>
+	</dl>
+	<div class="relatedpage"><a href="./primarykeyabstraction.html#order">PrimaryKeyAbstraction - PKで並べる</a></div>
+<pre><span class="codetitle">e.g. PKを抽象的に扱って一件検索 @Java</span><code>
+BehaviorReadable bhv = <span class="abbreviation">...</span>
+Entity entity = <span class="abbreviation">...</span> <span class="comment">// 例えば、PKのみ格納されてるとして</span>
+
+<span class="comment">// PKの等値条件</span>
+ConditionBean cb = bhv.newConditionBean();
+cb.<span class="keyword">acceptPrimaryKeyMap</span>(entity.getDBMeta().extractPrimaryKeyMap(entity));
+
+Entity entity = bhv.readEntity(); <span class="comment">// 指定されたPKで一件検索</span>
+</code></pre>
+	<h3 id="tableinfo">テーブルのメタデータ</h3>
+	<p>
+		getDBMeta() から DBMeta インターフェースを取得できます。
+	</p>
+	<div class="detailpage"><a href="./tableinfo.html">CB - TableInfo</a></div>
+	<h3 id="nodependent">テーブルに依存しないメソッド</h3>
+	<p>
+		幾つかのそもそもメソッド仕様がテーブルに依存しないメソッドが、インターフェースメソッドになっています。
+		以下、主なものを列挙しています。
+	</p>
+	<ul>
+		<li>paging()</li>
+		<li>enablePagingCountLater()</li>
+		<li>disablePagingReSelect()</li>
+		<li>fetchFirst()</li>
+		<li>fetchScope()</li>
+		<li>fetchPage()</li>
+		<li>lockForUpdate()</li>
+		<li>checkSafetyResult()</li>
+		<li>checkInvalidQuery()</li>
+		<li>configure()</li>
+		<li>toDisplaySql()</li>
+		<li>hasWhereClause()</li>
+		<li>hasOrderByClause()</li>
+		<li>clearOrderBy()</li>
+	</ul>
+
+</div>
+</div>
+
+<div id="sidebar">
+	<div class="logo"><a href="../../../../../../"><img src="../../../../../../image/parts/logo.png" alt="dbflute-logo" width="240" height="110" /></a></div>
+<ul>
+		<li><a href="../../../../../../ja/manual/function/generator/index.html">自動生成ツール</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/generator/client/index.html">DBFluteクライアント</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/engine/index.html">DBFluteエンジン</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/index.html">DBFluteタスク</a>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/generator/task/generate/index.html">Generate</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/sql2entity/index.html">Sql2Entity</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/generator/task/replaceschema/index.html">ReplaceSchema</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/manage/index.html">Manage</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/doc/schemahtml.html">SchemaHTML</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/function/ormapper/index.html">O/Rマッパ</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/ormapper/behavior/index.html">Behavior</a></li>
+				<li><a href="../../../../../../ja/manual/function/ormapper/conditionbean/index.html">ConditionBean</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/ormapper/outsidesql/index.html">OutsideSql</a></li>
+				<li><a href="../../../../../../ja/manual/function/ormapper/entity/index.html">Entity</a></li>
+				<li><a href="../../../../../../ja/manual/function/ormapper/runtime/index.html">DBFluteランタイム</a></li>
+			</ul>
+		</li>
+		<li>
+			<a href="../../../../../../ja/manual/function/genbafit/index.html">現場フィット</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/genbafit/implfit/index.html">アプリ実装の全体最適</a></li>
+				<li><a href="../../../../../../ja/manual/function/genbafit/projectfit/index.html">プロジェクト構成対応</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/genbafit/runtimefit/index.html">実行時共通要件の実現</a></li>
+				<li><a href="../../../../../../ja/manual/function/genbafit/deprecatedfit/index.html">非推奨な構造フォロー</a></li>
+				<li><a href="../../../../../../ja/manual/function/genbafit/dbflutefit/index.html">DBFluteサポート</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/function/helper/index.html">支援ツール</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/generator/intro/index.html">DBFlute Intro</a></li>
+				<li><a href="../../../../../../ja/manual/function/helper/emecha/index.html">EMecha (Eclipse Plugin)</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/helper/maven/index.html">Maven DBFlute Plugin</a></li>
+				<li><a href="../../../../../../ja/manual/function/helper/saflute/index.html">SAFlute</a></li>
+				<li><a href="../../../../../../ja/manual/function/helper/utflute/index.html">UTFlute</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/reference/index.html">リファレンス</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/reference/dbway/index.html">DBMSごとの取扱い</a></li>
+				<li><a href="../../../../../../ja/manual/reference/diway/index.html">DIコンテナごとの取扱い</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/reference/dfprop/index.html">DBFluteプロパティ</a></li>
+				<li><a href="../../../../../../ja/manual/reference/dictionary/index.html">DBFlute用語集</a></li>
+				<li><a href="../../../../../../ja/manual/reference/example/index.html">DBFlute Example</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/reference/faq/index.html">FAQ</a></li>
+				<li><a href="../../../../../../ja/manual/reference/troubleshooting/index.html">トラブルシューティング</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/topic/index.html">トピック</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/topic/dbdesign/index.html">DB設計</a></li>
+				<li><a href="../../../../../../ja/manual/topic/programming/index.html">プログラミング</a></li>
+				<li><a href="../../../../../../ja/manual/topic/friends/index.html">他のフレームワーク</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/topic/office/index.html">事務的な話</a></li>
+				<li><a href="../../../../../../ja/manual/topic/dbflutenet/index.html">DBFlute.NET</a></li>
+			</ul>
+		</li>
+	</ul>
+
+</div>
+
+<div id="footer">
+	<div><a href="../../../../../../ja/sitemap.html">SiteMap</a> <a href="http://d.hatena.ne.jp/jflute">Author's Blog</a><a href="https://www.seasar.org/issues/browse/DBFLUTE">BTS</a></div>
+	<ul class="footer-navi">
+		<li class="hd-introduction"><a href="../../../../../../ja/introduction/index.html">Introduction</a></li>
+		<li class="hd-tutorial"><a href="../../../../../../ja/tutorial/index.html">Tutorial</a>
+			<ul>
+				<li class="hd-architect"><a href="../../../../../../ja/tutorial/architect.html">for Architect</a></li>
+				<li class="hd-developer"><a href="../../../../../../ja/tutorial/developer.html">for Developer</a></li>
+			</ul>
+		</li>
+		<li class="hd-environment"><a href="../../../../../../ja/environment/index.html">Environment</a>
+			<ul>
+				<li class="hd-install"><a href="../../../../../../ja/environment/setup/index.html">Setup</a></li>
+				<li class="hd-upgrade"><a href="../../../../../../ja/environment/upgrade/index.html">Upgrade</a></li>
+			</ul>
+		</li>
+		<li class="hd-manual"><a href="../../../../../../ja/manual/index.html">Manual</a></li>
+	</ul>
+
+</div>
+
+</div>
+</body>
+</html>

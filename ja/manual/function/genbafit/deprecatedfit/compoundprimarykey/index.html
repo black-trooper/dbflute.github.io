@@ -1,0 +1,228 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja" lang="ja" >
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<meta http-equiv="Content-Style-Type" content="text/css" />
+	<meta name="keywords" content="DBFlute,複合主キー,複数主キー,複合PK,複合PrimaryKey" />
+	<link rel="stylesheet" type="text/css" href="../../../../../../css/sub.css" />
+	<!--[if IE 6.0]>
+		<link rel="stylesheet" type="text/css" href="../../../../../../css/cb/sub.css" />
+	<![endif]--> 
+	<title>複合主キーの対策 | DBFlute</title>
+</head>
+<body>
+<div id="container" class="ct-manual">
+
+<div id="mainbar">
+<div id="header">
+	<div class="navi-upper"><a href="../../../../../../ja/sitemap.html">SiteMap</a>|<a href="http://d.hatena.ne.jp/jflute/">Author's Blog</a></div>
+	<div class="navi-main">
+	<ul>
+		<li class="hd-introduction"><a href="../../../../../../ja/introduction/index.html"><img src="../../../../../../image/parts/navi/link-intro.png" alt="Introduction" width="75" height="32" /></a></li>
+		<li class="hd-tutorial"><a href="../../../../../../ja/tutorial/index.html"><img src="../../../../../../image/parts/navi/link-tuto.png" alt="Tutorial" width="56" height="24" /></a>
+			<ul>
+				<li class="hd-architect"><a href="../../../../../../ja/tutorial/architect.html"><img src="../../../../../../image/parts/navi/link-arch.png" alt="for Architect" width="80" height="24" /></a></li>
+				<li class="hd-developer"><a href="../../../../../../ja/tutorial/developer.html"><img src="../../../../../../image/parts/navi/link-dev.png" alt="for Developer" width="87" height="24" /></a></li>
+			</ul>
+		</li>
+		<li class="hd-environment"><a href="../../../../../../ja/environment/index.html"><img src="../../../../../../image/parts/navi/link-env.png" alt="Environment" width="84" height="25" /></a>
+			<ul>
+				<li class="hd-install"><a href="../../../../../../ja/environment/setup/index.html"><img src="../../../../../../image/parts/navi/link-setup.png" alt="Setup" width="42" height="24" /></a></li>
+				<li class="hd-upgrade"><a href="../../../../../../ja/environment/upgrade/index.html"><img src="../../../../../../image/parts/navi/link-upgrade.png" alt="Upgrade" width="61" height="25" /></a></li>
+			</ul>
+		</li>
+		<li class="hd-manual"><a href="../../../../../../ja/manual/index.html"><img src="../../../../../../image/parts/navi/link-manual.png" alt="Manual" width="62" height="25" /></a></li>
+	</ul>
+	</div>
+</div>
+
+<div id="content">
+	<h1>複合主キーの対策</h1>
+	<ul class="indexlist">
+		<li><a href="#about">複合主キーの特徴と対策</a></li>
+		<li><a href="#unsupported">複合主キーによる機能制限</a></li>
+		<li><a href="#handling">複合主キーへのできるだけの対応</a></li>
+		<li><a href="#compoundpkheadache">複合主キー対応のジレンマ</a></li>
+	</ul>
+
+	<h2 id="about">複合主キーの特徴と対策</h2>
+	<p>
+		主にサロゲートキーと一緒に話題になることの多いものです。
+		DBFluteではサロゲートキーで複合主キーを排除することが推奨されています。
+	</p>
+	<div class="detailpage"><a href="../../../../topic/dbdesign/surrogatekey.html">DB設計 - サロゲートキーと複合主キー</a></div>
+	<p>
+		ただし、それでも現実には複合主キーと対面することは多いものです。特に DBFlute
+		は、既に運用しているシステムでDB変更が多くて、メンテナンスが大変なのでDBFluteに切り替える、ということでレガシーシステムにも採用されることが珍しくありません。
+	</p>
+	<p>
+		DBFluteでは、複合主キーによるフレームワークのサービスの低下を最小限食い止めるようにしています。
+	</p>
+
+	<h2 id="unsupported">複合主キーによる機能制限</h2>
+	<p>
+		そもそも、どのような機能に制限が出るのか、以下の通りです。
+	</p>
+	<ul>
+		<li>InScopeRelation が利用できない</li>
+		<li>(Specify)DerivedReferrer が利用できない</li>
+		<li>(Query)DerivedReferrer が利用できない</li>
+		<li>NotExistsReferrer が利用できない (ExistsReferrer は可)</li>
+		<li>ScalarCondition が利用できない</li>
+		<li>シーケンスを使った Entity へのPK値の自動設定が利用できない</li>
+		<li>QueryUpdate が利用できない</li>
+		<li>QueryDelete が利用できない</li>
+	</ul>
+	<p>
+		主には、サブクエリ(特にInScopeのサブクエリ)を使って実現する機能が軒並み利用できなくなります。
+		もっと実装コストを掛ければ対応できそうなものもあれば、相当の実装コストを掛けても実現が難しいものもあります。
+	</p>
+
+	<h2 id="handling">複合主キーへのできるだけの対応</h2>
+	<p>
+		それでも、できるだけの対応をしています。
+	</p>
+	<dl class="textlist">
+		<dt>結合条件の自動付与</dt>
+		<dd>
+			これは、SQLの自動組み立てのできるO/Rマッパではほとんど当たり前のことですが、ConditionBean
+			では結合条件は単一であろうが複合であろうが意識せずに実装できます。結合条件における条件落ちを防ぐことができます。
+		</dd>
+		<dt>相関サブクエリ条件の自動付与</dt>
+		<dd>
+			複合主キーでも ExistsReferrer が利用できます。もともとできなかったものですが、よく使われる機能なので対応しています。
+			相関サブクエリ条件における条件落ちを防ぐことができます。ただし、同様に相関サブクエリで実現する
+			NotExistsReferrer や DerivedReferrer は対応できていません。
+		</dd>
+		<dt>LoadReferrer の対応</dt>
+		<dd>
+			こちらも、もともとできなかったものですが、よく使われる機能なので対応しています。
+		</dd>
+		<dt>PK抽象化メソッド</dt>
+		<dd>
+			ConditionBean や Behavior には、幾つかのPK抽象化メソッドをがあります。ConditionBean の cb.addOrderBy_PK_Asc()
+			cb.acceptPrimaryKey(pk) や Behavior の selectByPKValue()
+			や cb.acceptPrimaryKey()、Behavior の selectByPKValue()
+			などです。PKの条件落ちのバグなどを比較的抑えやすい機能です。 
+			<div class="relatedpage"><a href="../../../ormapper/conditionbean/various/primarykeyabstraction.html">CB - PrimaryKeyAbstraction</a></div>
+			<div class="relatedpage"><span class="working"><!-- <a href="../../../ormapper/behavior/various/primarykeyabstraction.html"> -->Bhv - PrimaryKeyAbstraction<!-- </a> --></span></div>
+		</dd>
+	</dl>
+	<p>
+		dbflute-multipledb-seasar-example にて、Example があります。
+	</p>
+	<div class="relatedpage"><span class="working"><!-- <a href="../../../../reference/example/index.html#pointenv"> -->DBFlute Example - 特定環境<!-- </a> --></span></div>
+
+	<div class="inucolumn">
+		<h2 id="compoundpkheadache">複合主キー対応のジレンマ</h2>
+		<p>
+			フレームワークとしては、こういった推奨されない環境(少なくとものそのフレームワークでは)に対する対応をどこまでするのか、常にジレンマがあります。
+			複合主キー対応は、フレームワーク開発における意識の矛盾の代表的な例です。
+		</p>
+		<ul>
+			<li>DBFluteを利用することによる別のレイヤへの制限を(できるだけ)発生させたくない</li>
+			<li>DBFluteで対応してるからって、何も考えずに複合主キーを許容してもらいたくない</li>
+		</ul>
+		<p>
+			この二つは常に対立します。また、複合主キーの問題に限りません。
+		</p>
+		<p>
+			幸い DBFlute は自動生成ツール一体型なので、比較的柔軟性があります。とりあえずはデフォルトでは推奨される方式を優先した仕様にし、
+			オプションで非推奨の環境にも対応できる、という形を心がけています。(もちろん、全てがそういうわけではありませんが)
+		</p>
+	</div>
+
+</div>
+</div>
+
+<div id="sidebar">
+	<div class="logo"><a href="../../../../../../"><img src="../../../../../../image/parts/logo.png" alt="dbflute-logo" width="240" height="110" /></a></div>
+<ul>
+		<li><a href="../../../../../../ja/manual/function/generator/index.html">自動生成ツール</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/generator/client/index.html">DBFluteクライアント</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/engine/index.html">DBFluteエンジン</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/index.html">DBFluteタスク</a>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/generator/task/generate/index.html">Generate</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/sql2entity/index.html">Sql2Entity</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/generator/task/replaceschema/index.html">ReplaceSchema</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/manage/index.html">Manage</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/doc/schemahtml.html">SchemaHTML</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/function/ormapper/index.html">O/Rマッパ</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/ormapper/behavior/index.html">Behavior</a></li>
+				<li><a href="../../../../../../ja/manual/function/ormapper/conditionbean/index.html">ConditionBean</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/ormapper/outsidesql/index.html">OutsideSql</a></li>
+				<li><a href="../../../../../../ja/manual/function/ormapper/entity/index.html">Entity</a></li>
+				<li><a href="../../../../../../ja/manual/function/ormapper/runtime/index.html">DBFluteランタイム</a></li>
+			</ul>
+		</li>
+		<li>
+			<a href="../../../../../../ja/manual/function/genbafit/index.html">現場フィット</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/genbafit/implfit/index.html">アプリ実装の全体最適</a></li>
+				<li><a href="../../../../../../ja/manual/function/genbafit/projectfit/index.html">プロジェクト構成対応</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/genbafit/runtimefit/index.html">実行時共通要件の実現</a></li>
+				<li><a href="../../../../../../ja/manual/function/genbafit/deprecatedfit/index.html">非推奨な構造フォロー</a></li>
+				<li><a href="../../../../../../ja/manual/function/genbafit/dbflutefit/index.html">DBFluteサポート</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/function/helper/index.html">支援ツール</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/generator/intro/index.html">DBFlute Intro</a></li>
+				<li><a href="../../../../../../ja/manual/function/helper/emecha/index.html">EMecha (Eclipse Plugin)</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/helper/maven/index.html">Maven DBFlute Plugin</a></li>
+				<li><a href="../../../../../../ja/manual/function/helper/saflute/index.html">SAFlute</a></li>
+				<li><a href="../../../../../../ja/manual/function/helper/utflute/index.html">UTFlute</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/reference/index.html">リファレンス</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/reference/dbway/index.html">DBMSごとの取扱い</a></li>
+				<li><a href="../../../../../../ja/manual/reference/diway/index.html">DIコンテナごとの取扱い</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/reference/dfprop/index.html">DBFluteプロパティ</a></li>
+				<li><a href="../../../../../../ja/manual/reference/dictionary/index.html">DBFlute用語集</a></li>
+				<li><a href="../../../../../../ja/manual/reference/example/index.html">DBFlute Example</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/reference/faq/index.html">FAQ</a></li>
+				<li><a href="../../../../../../ja/manual/reference/troubleshooting/index.html">トラブルシューティング</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/topic/index.html">トピック</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/topic/dbdesign/index.html">DB設計</a></li>
+				<li><a href="../../../../../../ja/manual/topic/programming/index.html">プログラミング</a></li>
+				<li><a href="../../../../../../ja/manual/topic/friends/index.html">他のフレームワーク</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/topic/office/index.html">事務的な話</a></li>
+				<li><a href="../../../../../../ja/manual/topic/dbflutenet/index.html">DBFlute.NET</a></li>
+			</ul>
+		</li>
+	</ul>
+
+</div>
+
+<div id="footer">
+	<div><a href="../../../../../../ja/sitemap.html">SiteMap</a> <a href="http://d.hatena.ne.jp/jflute">Author's Blog</a><a href="https://www.seasar.org/issues/browse/DBFLUTE">BTS</a></div>
+	<ul class="footer-navi">
+		<li class="hd-introduction"><a href="../../../../../../ja/introduction/index.html">Introduction</a></li>
+		<li class="hd-tutorial"><a href="../../../../../../ja/tutorial/index.html">Tutorial</a>
+			<ul>
+				<li class="hd-architect"><a href="../../../../../../ja/tutorial/architect.html">for Architect</a></li>
+				<li class="hd-developer"><a href="../../../../../../ja/tutorial/developer.html">for Developer</a></li>
+			</ul>
+		</li>
+		<li class="hd-environment"><a href="../../../../../../ja/environment/index.html">Environment</a>
+			<ul>
+				<li class="hd-install"><a href="../../../../../../ja/environment/setup/index.html">Setup</a></li>
+				<li class="hd-upgrade"><a href="../../../../../../ja/environment/upgrade/index.html">Upgrade</a></li>
+			</ul>
+		</li>
+		<li class="hd-manual"><a href="../../../../../../ja/manual/index.html">Manual</a></li>
+	</ul>
+
+</div>
+
+</div>
+</body>
+</html>

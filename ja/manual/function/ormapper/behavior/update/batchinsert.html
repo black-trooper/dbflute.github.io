@@ -1,0 +1,314 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja" lang="ja" >
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<meta http-equiv="Content-Style-Type" content="text/css" />
+	<meta name="keywords" content="DBFlute,Behavior,batchInsert,バッチ登録,一括登録,複数件登録,バッチ挿入" />
+	<link rel="stylesheet" type="text/css" href="../../../../../../css/sub.css" />
+	<!--[if IE 6.0]>
+		<link rel="stylesheet" type="text/css" href="../../../../../../css/cb/sub.css" />
+	<![endif]--> 
+	<title>batchInsert(entityList) | DBFlute</title>
+</head>
+<body>
+<div id="container" class="ct-manual">
+
+<div id="mainbar">
+<div id="header">
+	<div class="navi-upper"><a href="../../../../../../ja/sitemap.html">SiteMap</a>|<a href="http://d.hatena.ne.jp/jflute/">Author's Blog</a></div>
+	<div class="navi-main">
+	<ul>
+		<li class="hd-introduction"><a href="../../../../../../ja/introduction/index.html"><img src="../../../../../../image/parts/navi/link-intro.png" alt="Introduction" width="75" height="32" /></a></li>
+		<li class="hd-tutorial"><a href="../../../../../../ja/tutorial/index.html"><img src="../../../../../../image/parts/navi/link-tuto.png" alt="Tutorial" width="56" height="24" /></a>
+			<ul>
+				<li class="hd-architect"><a href="../../../../../../ja/tutorial/architect.html"><img src="../../../../../../image/parts/navi/link-arch.png" alt="for Architect" width="80" height="24" /></a></li>
+				<li class="hd-developer"><a href="../../../../../../ja/tutorial/developer.html"><img src="../../../../../../image/parts/navi/link-dev.png" alt="for Developer" width="87" height="24" /></a></li>
+			</ul>
+		</li>
+		<li class="hd-environment"><a href="../../../../../../ja/environment/index.html"><img src="../../../../../../image/parts/navi/link-env.png" alt="Environment" width="84" height="25" /></a>
+			<ul>
+				<li class="hd-install"><a href="../../../../../../ja/environment/setup/index.html"><img src="../../../../../../image/parts/navi/link-setup.png" alt="Setup" width="42" height="24" /></a></li>
+				<li class="hd-upgrade"><a href="../../../../../../ja/environment/upgrade/index.html"><img src="../../../../../../image/parts/navi/link-upgrade.png" alt="Upgrade" width="61" height="25" /></a></li>
+			</ul>
+		</li>
+		<li class="hd-manual"><a href="../../../../../../ja/manual/index.html"><img src="../../../../../../image/parts/navi/link-manual.png" alt="Manual" width="62" height="25" /></a></li>
+	</ul>
+	</div>
+</div>
+
+<div id="content">
+	<h1>batchInsert(entityList)</h1>
+	<ul class="indexlist">
+		<li><a href="#overview">概要</a>
+			<ul>
+				<li><a href="#basicconcept">基本概念</a></li>
+			</ul>
+		</li>
+		<li><a href="#howto">実装方法</a>
+			<ul>
+				<li><a href="#implflow">実装の流れ</a></li>
+			</ul>
+		</li>
+		<li><a href="#methodspec">メソッド仕様</a>
+			<ul>
+				<li><a href="#argument">引数</a></li>
+				<li><a href="#result">戻り値</a></li>
+				<li><a href="#exception">例外</a></li>
+			</ul>
+		</li>
+		<li><a href="#autoincrement">自動採番処理の自動化</a></li>
+		<li><a href="#commoncolumn">共通カラムは自動設定</a></li>
+		<li><a href="#exclusive">排他制御カラムの自動設定</a></li>
+		<li><a href="#nocascade">カスケードはしません</a></li>
+		<li><a href="#insertcolumn">insert文に列挙されるカラム</a>
+			<ul>
+				<li><a href="#modifiedonly">Setterが呼ばれたカラムが登録される <span class="frm">@since 1.0.5A</span></a></li>
+				<li><a href="#before105a">1.0.5Aより前のバージョンでは</a></li>
+				<li><a href="#columnsummary">更新系、列挙されるカラムのまとめ</a></li>
+			</ul>
+		</li>
+	</ul>
+
+	<h2 id="overview">概要</h2>
+	<h3 id="basicconcept">基本概念</h3>
+	<p>
+		Entityのリストをもとに <em class="keyword">バッチ登録</em> をします。
+	</p>
+	<p>
+		これは単なる複数件の insert() ではありません。
+		DBと一回の通信で複数件のレコードを取扱うバッチ更新により、ループで一件登録を行う場合に比べてパフォーマンス的に優位です。
+		具体的には、PreparedStatement の addBatch(), executeBatch() を利用します。
+	</p>
+	<div class="relatedpage"><span class="working"><!-- <a href="../../../../topic/programming/dbaccess/batchupdate"> -->DBアクセス - バッチ更新<!-- </a> --></span></div>
+	<p>
+		通常の一件登録の insert() とは違う仕様を持つことがあります。例えば、登録時に自動採番された Identity の値は登録後の Entity
+		の中には格納されません。また、insert 文に列挙されるカラムは複数のEntityでの最小公倍数のカラムです<span class="frm">(@since 1.0.5A)</span>。
+	</p>
+	<div class="relatedpage"><a href="#autoincrement">this - 自動採番処理の自動化</a></div>
+	<div class="relatedpage"><a href="#insertcolumn">this - insert文に列挙されるカラム</a></div>
+	<p>
+		会話上では、<em class="keyword">ばっちいんさーと</em> と表現します。
+	</p>
+
+	<h2 id="howto">実装方法</h2>
+	<h3 id="implflow">実装の流れ</h3>
+	<p>
+		Behaviorの <em class="keyword">batchInsert()</em>
+		を呼び出し、Entityを指定します。
+	</p>
+<pre><span class="codetitle">e.g. insert()の実装手順 (Eclipseでコード補完) {MEMBER} @Java</span><code>
+List&lt;Member&gt; memberList = <span class="keyword">new</span> ArrayList&lt;Member&gt;();
+{
+    Member member = <span class="keyword">new</span> Member();
+    <span class="comment">//member.setMemberId(1);</span> <span class="comment">// 自動採番の場合は不要</span>
+    member.setMemberName(<span class="literal">"Stojkovic"</span>);
+    <span class="abbreviation">...</span>
+    <span class="comment">//member.setRegisterUser(user);</span> <span class="comment">// 共通カラムは自動設定(設定が有効なら)</span>
+    <span class="comment">//member.setRegister...</span>
+    <span class="comment">//member.setVersionNo(versionNo);</span> <span class="comment">// バージョン番号は自動で初期値に</span>
+    memberList.add(member);
+}
+{
+    Member member = <span class="keyword">new</span> Member();
+    member.setMemberName(<span class="literal">"Savicevic"</span>);
+    <span class="abbreviation">...</span>
+    memberList.add(member);
+}
+{
+    Member member = <span class="keyword">new</span> Member();
+    member.setMemberName(<span class="literal">"Mijatovic"</span>);
+    <span class="abbreviation">...</span>
+    memberList.add(member);
+}
+
+<span class="attribute">memberBhv</span>.baI <span class="comment">// .baI と打って enter</span>
+--
+<span class="attribute">memberBhv</span>.<span class="point">batchInsert</span>(memberList);
+
+<span class="comment">// .ba と打つと batchInsert() や batchUpdate() など</span>
+<span class="comment">// バッチ更新系のメソッドだけが補完候補に列挙される</span>
+</code></pre>
+
+	<h2 id="methodspec">メソッド仕様</h2>
+	<h3 id="argument">引数</h3>
+	<p>
+		該当のBehaviorに対応するテーブルのEntityのリストとなります。
+	</p>
+	<p>
+		空リストの場合は、何も処理が発生しません。nullを指定した場合は例外発生します。
+	</p>
+	<h3 id="result">戻り値</h3>
+	<p>
+		それぞれのレコードごとの登録件数を示す int[] です。これは JDBC の executeBatch() の戻り値そのままの値となっています。一つの Entity
+		で一つのレコードを登録する仕様なので、実際には {1, 1, 1, 1, ...}
+		という値になることが想定されます。"0" を持つ要素は登録に失敗したことを示しますが、そのような状況は想定されていません。
+		(ほとんどの場合において、この戻り値を意識する必要はないでしょう)
+	</p>
+	<h3 id="exception">例外</h3>
+	<dl class="textlist">
+		<dt>一意制約違反があった場合</dt>
+		<dd>org.seasar.dbflute.exception.EntityAlreadyExistsException</dd>
+		<dd>
+			DBFluteで正式サポートしていない DBMS では、別の例外(SQLFailureException)の可能性があります。
+			<div class="relatedpage"><a href="../../../../../environment/supported.html#database">DBFluteのサポート情報 - データベース</a></div>
+		</dd>
+	</dl>
+
+	<h2 id="autoincrement">自動採番処理の自動化</h2>
+	<p>
+		一件登録の insert() と同じく自動設定されます(全ての Entity にそれぞれ設定されます)。
+	</p>
+	<div class="relatedpage"><a href="./insert.html#autoincrement">insert(entity) - 自動採番処理の自動化</a></div>
+	<p>
+		ただし、バッチ登録特有の制限として、Identityの場合は採番された値を登録処理後の Entity から取得することができません。
+		(シーケンスの場合は取得できる)
+	</p>
+
+	<h2 id="commoncolumn">共通カラムは自動設定</h2>
+	<p>
+		一件登録の insert() と同じく自動設定されます(全ての Entity にそれぞれ設定されます)。
+	</p>
+	<div class="relatedpage"><a href="./insert.html#commoncolumn">insert(entity) - 共通カラムは自動設定</a></div>
+
+	<h2 id="exclusive">排他制御カラムの自動設定</h2>
+	<p>
+		一件登録の insert() と同じく自動設定されます(全ての Entity にそれぞれ設定されます)。
+	</p>
+	<div class="relatedpage"><a href="./insert.html#exclusive">insert(entity) - 排他制御カラムの自動設定</a></div>
+
+	<h2 id="nocascade">カスケードはしません</h2>
+	<p>
+		一件登録の insert() と同じくカスケードはしません。
+	</p>
+	<div class="relatedpage"><a href="./insert.html#nocascade">insert(entity) - カスケードはしません</a></div>
+
+	<h2 id="insertcolumn">insert文に列挙されるカラム</h2>
+	<h3 id="modifiedonly">Setterが呼ばれたカラムが登録される <span class="frm">@since 1.0.5A</span></h3>
+	<p>
+		(newされた) Entity の Setter が呼ばれたカラムが、insert 文の項目に列挙されます<span class="frm">(@since 1.0.5A)</span>。
+		これを <em class="keyword">ModifedOnly</em> と呼び、一件登録の insert() の方と同じ方式です。
+	</p>
+	<p>
+		ただ、複数のEntityで呼び出しセットがバラバラな場合は、最小公倍数のカラムが列挙されます。
+		ゆえに、一部のEntityで呼び出されなかったカラムの登録では、デフォルト制約が利用されず、固定でnullで登録されます(nullでセットすることを省略したとみなされる)。
+		もちろん、最小公倍数に含まれなかったカラムは、デフォルト制約が有効です。
+	</p>
+	<p>
+		<span class="frm">※自動採番のPKや共通カラムや排他制御カラムは、Setterが呼ばれなくても特別な処理で列挙されます。</span>
+	</p>
+	<h3 id="before105a">1.0.5Aより前のバージョンでは</h3>
+	<p>
+		insert 文の項目には全てのカラムが列挙されます。
+		ゆえに、DB上ので設定でデフォルト制約が存在する場合でも、そのデフォルト値を利用して登録することはできません。
+	</p>
+	<div class="relatedpage"><a href="../../../../../environment/upgrade/migration/migrate104Kto105A.html">移行ポイント - 移行 1.0.4K to 1.0.5A</a></div>
+	<p>
+		運用後のDB変更でNotNullのカラム追加をする際は、そのテーブルのBehaviorの batchInsert()
+		の呼び出し処理を確認する必要があります。そのまま何も対応せずカラムだけ追加すると、NotNull制約で落ちる可能性があります。
+		例えば Eclipse であれば、ctrl + shift + G のショートカットで呼び出し階層を検索できます。
+	</p>
+	<div class="relatedpage"><a href="../../../../topic/programming/shortcut/searchcut.html#program">Topic - 検索ショートカット - プログラム周り</a></div>
+	<p>
+		以前の悩みがこちらです。<span class="frm">(ようやく改善しました)</span>
+	</p>
+	<div class="detailpage"><a href="http://d.hatena.ne.jp/jflute/20121217/1355749396">外部サイト - jfluteの日記 - DBFluteのノリ切れないやつ、バッチ登録</a></div>
+	<h3 id="columnsummary">更新系、列挙されるカラムのまとめ</h3>
+	<p>
+		まとめていますので、ぜひご覧を。
+	</p>
+	<div class="detailpage"><a href="./insert.html#columnsummary">insert() - 更新系、列挙されるカラムのまとめ</a></div>
+
+</div>
+</div>
+
+<div id="sidebar">
+	<div class="logo"><a href="../../../../../../"><img src="../../../../../../image/parts/logo.png" alt="dbflute-logo" width="240" height="110" /></a></div>
+<ul>
+		<li><a href="../../../../../../ja/manual/function/generator/index.html">自動生成ツール</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/generator/client/index.html">DBFluteクライアント</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/engine/index.html">DBFluteエンジン</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/index.html">DBFluteタスク</a>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/generator/task/generate/index.html">Generate</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/sql2entity/index.html">Sql2Entity</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/generator/task/replaceschema/index.html">ReplaceSchema</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/manage/index.html">Manage</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/doc/schemahtml.html">SchemaHTML</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/function/ormapper/index.html">O/Rマッパ</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/ormapper/behavior/index.html">Behavior</a></li>
+				<li><a href="../../../../../../ja/manual/function/ormapper/conditionbean/index.html">ConditionBean</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/ormapper/outsidesql/index.html">OutsideSql</a></li>
+				<li><a href="../../../../../../ja/manual/function/ormapper/entity/index.html">Entity</a></li>
+				<li><a href="../../../../../../ja/manual/function/ormapper/runtime/index.html">DBFluteランタイム</a></li>
+			</ul>
+		</li>
+		<li>
+			<a href="../../../../../../ja/manual/function/genbafit/index.html">現場フィット</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/genbafit/implfit/index.html">アプリ実装の全体最適</a></li>
+				<li><a href="../../../../../../ja/manual/function/genbafit/projectfit/index.html">プロジェクト構成対応</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/genbafit/runtimefit/index.html">実行時共通要件の実現</a></li>
+				<li><a href="../../../../../../ja/manual/function/genbafit/deprecatedfit/index.html">非推奨な構造フォロー</a></li>
+				<li><a href="../../../../../../ja/manual/function/genbafit/dbflutefit/index.html">DBFluteサポート</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/function/helper/index.html">支援ツール</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/generator/intro/index.html">DBFlute Intro</a></li>
+				<li><a href="../../../../../../ja/manual/function/helper/emecha/index.html">EMecha (Eclipse Plugin)</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/helper/maven/index.html">Maven DBFlute Plugin</a></li>
+				<li><a href="../../../../../../ja/manual/function/helper/saflute/index.html">SAFlute</a></li>
+				<li><a href="../../../../../../ja/manual/function/helper/utflute/index.html">UTFlute</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/reference/index.html">リファレンス</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/reference/dbway/index.html">DBMSごとの取扱い</a></li>
+				<li><a href="../../../../../../ja/manual/reference/diway/index.html">DIコンテナごとの取扱い</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/reference/dfprop/index.html">DBFluteプロパティ</a></li>
+				<li><a href="../../../../../../ja/manual/reference/dictionary/index.html">DBFlute用語集</a></li>
+				<li><a href="../../../../../../ja/manual/reference/example/index.html">DBFlute Example</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/reference/faq/index.html">FAQ</a></li>
+				<li><a href="../../../../../../ja/manual/reference/troubleshooting/index.html">トラブルシューティング</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/topic/index.html">トピック</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/topic/dbdesign/index.html">DB設計</a></li>
+				<li><a href="../../../../../../ja/manual/topic/programming/index.html">プログラミング</a></li>
+				<li><a href="../../../../../../ja/manual/topic/friends/index.html">他のフレームワーク</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/topic/office/index.html">事務的な話</a></li>
+				<li><a href="../../../../../../ja/manual/topic/dbflutenet/index.html">DBFlute.NET</a></li>
+			</ul>
+		</li>
+	</ul>
+
+</div>
+
+<div id="footer">
+	<div><a href="../../../../../../ja/sitemap.html">SiteMap</a> <a href="http://d.hatena.ne.jp/jflute">Author's Blog</a><a href="https://www.seasar.org/issues/browse/DBFLUTE">BTS</a></div>
+	<ul class="footer-navi">
+		<li class="hd-introduction"><a href="../../../../../../ja/introduction/index.html">Introduction</a></li>
+		<li class="hd-tutorial"><a href="../../../../../../ja/tutorial/index.html">Tutorial</a>
+			<ul>
+				<li class="hd-architect"><a href="../../../../../../ja/tutorial/architect.html">for Architect</a></li>
+				<li class="hd-developer"><a href="../../../../../../ja/tutorial/developer.html">for Developer</a></li>
+			</ul>
+		</li>
+		<li class="hd-environment"><a href="../../../../../../ja/environment/index.html">Environment</a>
+			<ul>
+				<li class="hd-install"><a href="../../../../../../ja/environment/setup/index.html">Setup</a></li>
+				<li class="hd-upgrade"><a href="../../../../../../ja/environment/upgrade/index.html">Upgrade</a></li>
+			</ul>
+		</li>
+		<li class="hd-manual"><a href="../../../../../../ja/manual/index.html">Manual</a></li>
+	</ul>
+
+</div>
+
+</div>
+</body>
+</html>

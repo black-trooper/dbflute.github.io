@@ -1,0 +1,470 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja" lang="ja" >
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<meta http-equiv="Content-Style-Type" content="text/css" />
+	<meta name="keywords" content="DBFlute,LastaFlute,Java,Lean Startup,Incremental Development,Transaction,トランザクション" />
+	<link rel="stylesheet" type="text/css" href="../../../../css/lasub.css" />
+	<!--[if IE 6.0]>
+		<link rel="stylesheet" type="text/css" href="../../../../css/cb/sub.css" />
+	<![endif]--> 
+	<title>ユーザーメッセージ (UserMessages) | LastaFlute</title>
+</head>
+<body>
+<div id="container" class="ct-default">
+
+<div id="mainbar">
+<div id="header">
+	<div class="navi-upper"><a href="../../../../ja/sitemap.html">SiteMap</a>|<a href="http://d.hatena.ne.jp/jflute/">Author's Blog</a></div>
+	<div class="navi-main">
+	<ul>
+		<li class="hd-introduction"><a href="../../../../ja/introduction/index.html"><img src="../../../../image/parts/navi/link-intro.png" alt="Introduction" width="75" height="32" /></a></li>
+		<li class="hd-tutorial"><a href="../../../../ja/tutorial/index.html"><img src="../../../../image/parts/navi/link-tuto.png" alt="Tutorial" width="56" height="24" /></a>
+			<ul>
+				<li class="hd-architect"><a href="../../../../ja/tutorial/architect.html"><img src="../../../../image/parts/navi/link-arch.png" alt="for Architect" width="80" height="24" /></a></li>
+				<li class="hd-developer"><a href="../../../../ja/tutorial/developer.html"><img src="../../../../image/parts/navi/link-dev.png" alt="for Developer" width="87" height="24" /></a></li>
+			</ul>
+		</li>
+		<li class="hd-environment"><a href="../../../../ja/environment/index.html"><img src="../../../../image/parts/navi/link-env.png" alt="Environment" width="84" height="25" /></a>
+			<ul>
+				<li class="hd-install"><a href="../../../../ja/environment/setup/index.html"><img src="../../../../image/parts/navi/link-setup.png" alt="Setup" width="42" height="24" /></a></li>
+				<li class="hd-upgrade"><a href="../../../../ja/environment/upgrade/index.html"><img src="../../../../image/parts/navi/link-upgrade.png" alt="Upgrade" width="61" height="25" /></a></li>
+			</ul>
+		</li>
+		<li class="hd-manual"><a href="../../../../ja/manual/index.html"><img src="../../../../image/parts/navi/link-manual.png" alt="Manual" width="62" height="25" /></a></li>
+	</ul>
+	</div>
+</div>
+
+<div id="content">
+	<h1>ユーザーメッセージ (UserMessages)</h1>
+	<div class="relatedpage"><a href="../../index.html">LastaFlute</a></div>
+	<div class="relatedpage"><a href="./lavalidation.html">見通しのValidation</a></div>
+	<div class="relatedpage"><a href="../architecture/exceptionhandling.html">開拓の例外ハンドリング</a></div>
+	<div class="relatedpage"><a href="../architecture/objsafeprop.html">LastaFluteのタイプセーフProperties</a></div>
+	<ul class="indexlist">
+		<li><a href="#overview">ユーザーメッセージとは？</a>
+			<ul>
+				<li><a href="#whoread">誰向けのメッセージ？</a></li>
+				<li><a href="#whereismessage">どこで管理してる？</a></li>
+				<li><a href="#objectivetypesafe">継承できてタイプセーフ</a></li>
+			</ul>
+		</li>
+		<li><a href="#howtouse">メッセージの指定方法</a>
+			<ul>
+				<li><a href="#validatorannotation">Validatorアノテーションなら</a></li>
+				<li><a href="#embeddedappex">組み込みの業務例外なら</a></li>
+				<li><a href="#programmable">あとはプログラム上で指定する</a></li>
+			</ul>
+		</li>
+		<li><a href="#howtochange">メッセージ修正の仕方</a></li>
+		<li><a href="#howtoadd">メッセージ追加の仕方</a></li>
+		<li><a href="#forproperty">どの項目のためのメッセージか？</a></li>
+		<li><a href="#subjectivemessage">主語ありメッセージ</a></li>
+		<li><a href="#variablemessage">動的変数付きメッセージ</a>
+			<ul>
+				<li><a href="#indexedvariable">インデックス変数 <span class="frm">e.g. {0} of dreams</span></a></li>
+				<li><a href="#namedvariable">名前付き変数 <span class="frm">(@since LastaFlute-1.0.0)</span></a></li>
+			</ul>
+		</li>
+		<li><a href="#i18n">メッセージの多言語対応</a></li>
+	</ul>
+
+	<h2 id="overview">ユーザーメッセージとは？</h2>
+	<h3 id="whoread">誰向けのメッセージ？</h3>
+	<p>
+		基本的に、アプリケーションのユーザー (一般消費者の会員や内部管理とするオペレーターなど) に対するメッセージを指します。
+		つまり、コンピューター向けではなく人間に対するメッセージで、そして、ディベロッパー (エンジニア、プログラマー) ではない人のためのメッセージです。
+		画面に表示されることが前提です。ゆえに、体裁も整えつつ丁寧に状況を伝える必要がありますし、逆にあまりセキュアな情報は載せてはいけません。
+	</p>
+	<p>
+		主に、"何々は必須です" と言ったようなバリデーションエラーのメッセージが相当しますが、業務例外のときのメッセージも同じです。
+		主には、この二つの事象をユーザーに伝えるメッセージと考えて良いでしょう。
+	</p>
+	<div class="relatedpage"><a href="../architecture/exceptionhandling.html">開拓の例外ハンドリング (Exception Handling)</a></div>
+	<p>
+		ただ、それが必ずしも自然言語とは限りません。例えば、JSON APIのアプリでクライアントメッセージ方式であれば、サーバーAPIからすると、ユーザーメッセージはクライアントアプリが解釈できる情報を戻すことになります。
+		とはいえ、もちろんのこと、システム全体から見れば最終的には自然言語のメッセージに翻訳されることにはなるでしょう。
+	</p>
+	<div class="relatedpage"><a href="../impldesign/jsondesign.html#messagemanage">E. メッセージ管理: クライアントメッセージ管理？サーバーメッセージ管理？</a></div>
+	<h3 id="whereismessage">どこで管理してる？</h3>
+	<p>
+		LastaFluteでは、src/main/resources の [app]_message.properties にて管理しています。
+		UTF-8で読み込んでいるので、日本語をユニコードエスケープする必要はありません。
+	</p>
+<pre><span class="codetitle">e.g. validation error and application exception message @[app]_message.properties</span><code>
+constraints.Required.message                = <span class="literal">is required</span>
+constraints.TypeAny.message                 = <span class="literal">should be {propertyType}</span>
+constraints.TypeInteger.message             = <span class="literal">should be number</span>
+
+<span class="abbreviation">...</span>
+
+errors.login.failure=<span class="literal">could not login</span>
+errors.app.illegal.transition=<span class="literal">retry because of illegal transition</span>
+errors.app.db.already.deleted=<span class="literal">others might be deleted, so retry</span>
+</code></pre>
+	<h3 id="objectivetypesafe">継承できてタイプセーフ</h3>
+	<p>
+		継承関係を持っているので、マルチプロジェクトでもプロジェクト間で再利用もできますし、オーバーライドを活用してプロジェクトごとに微調整することもできます。
+	</p>
+	<div class="relatedpage"><a href="../architecture/objsafeprop.html#objectiveprop">継承できる Properties</a></div>
+<pre><span class="codetitle">e.g. リファレンス実装のMaihamaプロジェクトでのProperties継承構造 @Directory</span><code>
+maihama-common
+ |-src/main/resources
+    |-maihama_message.properties <span class="comment">// 共通のメッセージリソース</span>
+
+maihama-dockside
+ |-src/main/resources
+ |  |-dockside_message.properties <span class="comment">// アプリ固有のメッセージリソース</span>
+</code></pre>
+	<p>
+		また、DBFlute の FreeGen を使って、propertiesに対応した [App]Messages クラスを自動生成することができます。
+		プログラム上で、properties のキーをハードコートすることは基本的にありません。
+	</p>
+	<div class="relatedpage"><a href="../architecture/objsafeprop.html#typesafeprop">タイプセーフな Properties</a></div>
+<pre><span class="codetitle">e.g. auto-generated method for message @Java</span><code>
+<span class="localvar">messages</span>.addConstraintsRequiredMessage(<span class="abbreviation">...</span>);
+</code></pre>
+
+	<h2 id="howtouse">メッセージの指定方法</h2>
+	<h3 id="validatorannotation">Validatorアノテーションなら</h3>
+	<p>
+		それぞれValidatorアノテーションごとに、対応するメッセージが決まっています。
+		例えば、@Requiredアノテーションであれば、constraints.Required.message になります。
+		ゆえに、ディベロッパーが意識して指定するということはあまりありません。
+	</p>
+<pre><span class="codetitle">e.g. property for message @Java</span><code>
+@Required    <span class="comment">// constraints.Required.message が利用される</span>
+<span class="keyword">public</span> String mysticOneman;
+</code></pre>
+	<p>
+		とある状況だけ、Validatorアノテーションのメッセージを差し替えたい場合は、message属性にメッセージのキーを指定します。
+		そのとき、ハードコードで指定するのではなく、FreeGenで自動生成された [App]Messages の定義を使って指定しましょう。
+	</p>
+<pre><span class="codetitle">e.g. property for message @Java</span><code>
+@Required(<span class="point">message</span>=DocksideMessages.<span class="attribute">ERRORS_SEA_LAND</span>)
+<span class="keyword">public</span> String mysticOneman;
+</code></pre>
+	<h3 id="embeddedappex">組み込みの業務例外なら</h3>
+	<p>
+		LastaFluteに組み込まれてる業務例外であれば、例外ごとに対応するメッセージが決まっています。
+	</p>
+	<div class="relatedpage"><a href="../architecture/exceptionhandling.html#bizhandling">開拓の例外ハンドリング - 業務例外ハンドリング</a></div>
+	<dl class="longkeymainlist">
+		<dt>LoginFailureException</dt><dd>ログイン画面へリダイレクト <span class="frm">(errors.login.failure)</span></dd>
+		<dt>RequestIllegalTransitionEx...</dt><dd>show_errors.html <span class="frm">(errors.app.illegal.transition)</span></dd>
+		<dt>DoubleSubmittedRequestEx...</dt><dd>verifyToken()で指定 <span class="frm">(errors.app.double.submit.request)</span></dd>
+		<dt>EntityAlreadyDeletedEx...</dt><dd>show_errors.html <span class="frm">(errors.app.db.already.deleted)</span></dd>
+		<dt>EntityAlreadyUpdatedEx...</dt><dd>show_errors.html <span class="frm">(errors.app.db.already.updated)</span></dd>
+		<dt>EntityAlreadyExistsEx...</dt><dd>show_errors.html <span class="frm">(errors.app.db.already.exists)</span></dd>
+	</dl>
+	<p>
+		ゆえに、それらメッセージのキーは、削除したり変更したりしてはいけません。<span class="frm">(文言の修正はOK)</span>
+	</p>
+<pre><span class="codetitle">e.g. six framework-embedded messages @[app]_message.properties</span><code>
+<span class="comment"># ----------------------------------------------------------
+#                                      Application Exception
+#                                      ---------------------
+# /- - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# six framework-embedded messages (don't change key names)
+# - - - - - - - - - -/</span>
+errors.login.failure=<span class="literal">could not login</span>
+errors.app.illegal.transition=<span class="literal">retry because of illegal transition</span>
+errors.app.db.already.deleted=<span class="literal">others might be deleted, so retry</span>
+errors.app.db.already.updated=<span class="literal">others might be updated, so retry</span>
+errors.app.db.already.exists=<span class="literal">already existing data, so retry</span>
+errors.app.double.submit.request=<span class="literal">double submit might be requested</span>
+</code></pre>
+	<h3 id="programmable">あとはプログラム上で指定する</h3>
+	<p>
+		FreeGenで自動生成された [App]Messages の add...() メソッドを使って指定します。
+	</p>
+	<p>
+		例えば、相関バリエーションなどはプログラムで実装するので、そのとき活用します。
+	</p>
+	<div class="relatedpage"><a href="./lavalidation.html#morevalidation">3. Lambdaで、もっとValidation</a></div>
+<pre><span class="codetitle">e.g. moreValidate() uses add...() @Java</span><code>
+@Execute
+<span class="keyword">public</span> HtmlResponse index(<span class="keyword">int</span> <span class="localvar">productId</span>, SeaLandForm <span class="localvar">form</span>) {
+    <span class="subpoint">validate</span>(<span class="localvar">form</span>, <span class="localvar">messages</span> -&gt; <span class="point">moreValidate</span>(<span class="localvar">form</span>, <span class="localvar">messages</span>), () -&gt; {
+        <span class="keyword">return</span> asHtml(<span class="attribute">path_Sea_SeaLandHtml</span>);
+    });
+    <span class="abbreviation">...</span>
+}
+
+<span class="keyword">private void</span> <span class="subpoint">moreValidate</span>(SeaLandForm <span class="localvar">form</span>, HarborMessages <span class="localvar">messages</span>) {
+    <span class="keyword">if</span> (<span class="localvar">form</span>.<span class="attribute">sea</span> != <span class="keyword">null</span> && <span class="localvar">form</span>.<span class="attribute">land</span> != <span class="keyword">null</span>) {
+        <span class="keyword">if</span> (<span class="localvar">form</span>.<span class="attribute">sea</span>.length() &gt; <span class="localvar">form</span>.<span class="attribute">land</span>.length()) {
+            <span class="localvar">messages</span>.addErrorsSeaLand(<span class="literal">"sea"</span>);
+        }
+    }
+}
+</code></pre>
+	<p>
+		また、独自の業務例外であれば、同じように [App]Messages の add...() メソッドを使います。
+	</p>
+<pre><span class="codetitle">e.g. ActionでUserMessagesを使った業務例外のthrow @Java</span><code>
+<span class="keyword">throw new</span> MessagingApplicationException(<span class="literal">"<span class="abbreviation">...</span>"</span>
+    , <span class="keyword">new</span> <span class="point">HarborMessages()</span>.addErrorsSignup<span class="abbreviation">...</span>(UserMessages.<span class="attribute">GLOBAL</span>, <span class="abbreviation">...</span>));
+</code></pre>
+
+	<h2 id="howtochange">メッセージ修正の仕方</h2>
+	<p>
+		src/main/resources の [app]_message.properties のメッセージを修正します。
+		<span class="frm">(UTF-8で読み込んでいるので、日本語をユニコードエスケープする必要はありません)</span>
+	</p>
+	<p>
+		文言の修正だけであれば、FreeGenを叩かなくても動作に影響はないですが、[App]Messagesクラスの JavaDoc
+		を更新できるので、一応叩いておくと良いでしょう。
+	</p>
+	<p>
+		マルチプロジェクトの場合、継承関係を構築していますので、うまくプロジェクト間での再利用や、オーバーライドなどを活かしましょう。
+	</p>
+	<div class="relatedpage"><a href="../architecture/objsafeprop.html">LastaFluteのタイプセーフProperties</a></div>
+
+	<h2 id="howtoadd">メッセージ追加の仕方</h2>
+	<p>
+		src/main/resources の [app]_message.properties にメッセージを追加します。
+		<span class="frm">(UTF-8で読み込んでいるので、日本語をユニコードエスケープする必要はありません)</span>
+	</p>
+	<p>
+		追加したら、FreeGenを叩きます。[App]Messagesに add...() メソッドが追加され、アプリで呼べるようになります。
+	</p>
+
+	<h2 id="forproperty">どの項目のためのメッセージか？</h2>
+	<p>
+		[App]Messages で add...() を使うときに、必ず第一引数で <em class="keyword">関連する項目のプロパティ名</em>
+		を指定します。どの項目のためのメッセージか？を表現するためです<span class="frm">(画面側でその名前で制御します)</span>。
+	</p>
+	<p>
+		サーバーサイドHTMLであればHTML上の名前、JSON APIであればJSON上の名前が適しています。
+		自然と、FormクラスやBodyクラスの変数名と同じになることが多いでしょう。
+	</p>
+<pre><span class="codetitle">e.g. property for message @Java</span><code>
+<span class="localvar">messages</span>.addConstraintsRequiredMessage(<span class="literal">"productName"</span>);
+</code></pre>
+	<p>
+		特に項目に依存しないトップレベルのメッセージであれば、_global を指定するのが LastaFlute
+		での慣習です。UserMessages.GLOBAL 定数を使って指定できます。業務例外などではこちらを利用することがほとんどでしょう。
+	</p>
+<pre><span class="codetitle">e.g. property for message @Java</span><code>
+<span class="localvar">messages</span>.addConstraintsRequiredMessage(UserMessages.<span class="attribute">GLOBAL</span>);
+</code></pre>
+	<p>
+		ちなみに、Validatorアノテーションによるメッセージの場合は、アノテーションが付与されているプロパティの名前がそのまま利用されます。
+	</p>
+
+	<h2 id="subjectivemessage">主語ありメッセージ</h2>
+	<p>
+		メッセージを主語ありにしたいときは、メッセージに {item} を付与します。
+	</p>
+<pre><span class="codetitle">e.g. subjective message @[app]_message.properties</span><code>
+constraints.Required.message = <span class="attribute">{item}</span> is required
+</code></pre>
+	<p>
+		[app]_label.properties に定義されている labels.[変数名] に合致するラベルがあれば、その値が表示されます。
+		存在しない場合は、変数名がそのまま表示されます。<span class="frm">(変数名がそのまま表示されていいことはまずないと思うので、labelを用意しましょう)</span>
+	</p>
+
+	<h2 id="variablemessage">動的変数付きメッセージ</h2>
+	<h3 id="indexedvariable">インデックス変数 <span class="frm">e.g. {0} of dreams</span></h3>
+	<p>
+		プログラムからの動的な値をメッセージの中に埋め込みたいときは、
+		中括弧 {} で囲って、その中に番号を付けましょう。e.g. {0}, {1}
+	</p>
+<pre><span class="codetitle">e.g. indexed variable message @[app]_message.properties</span><code>
+errors.maihama = <span class="attribute">{0}</span> of dreams
+</code></pre>
+	<ul class="codeoutro">
+		<li>ゼロ始まりであること <span class="frm">e.g. {0} of dreams, sea of {1}</span></li>
+		<li>抜け番がないこと</li>
+		<li>同じ番号を使わないこと</li>
+	</ul>
+	<p>
+		FreeGenをすると、自動生成された [App]Messages の add...() メソッドの引数で、動的パラメーターを指定することができます。
+	</p>
+	<h4>DBFlute-1.1.4 より</h4>
+	<p>
+		指定された番号の順番で、引数になります。
+	</p>
+	<ul>
+		<li>{0} of {1} であれば、String arg0, String arg1</li>
+		<li>{1} of {0} であっても、String arg0, String arg1</li>
+	</ul>
+	<p>
+		つまり、メッセージ上の番号の出現位置は、引数の順番に関係ありません。
+		これは、以下のことを考慮してあえてこのようにしています。
+	</p>
+	<ul>
+		<li>後からメッセージ(自然言語)の都合で、変数位置を変えてもプログラムに影響がない</li>
+		<li>多言語対応のとき他の言語では入れ替わる可能性があるので、出現位置への意識は少ない方が良い</li>
+	</ul>
+	<p>
+		<span class="frm">※基本的に、LastaFlute-1.0.0 以上であれば DBFlute-1.1.4 以上を利用しましょう。
+		互いに処理を合わせて作っているので、一番スマートに利用できます。</span>
+	</p>
+	<h4>DBFlute-1.1.3 まで</h4>
+	<p>
+		メッセージの出現位置の順番で、引数になります。
+	</p>
+	<ul>
+		<li>{0} of {1} であれば、String arg0, String arg1</li>
+		<li>{1} of {0} だと逆に、String arg1, String arg0</li>
+	</ul>
+	<p>
+		これだと、後からメッセージの都合で変数位置を変えた場合、プログラムの引数指定も修正してあげないといけません。
+	</p>
+	<h3 id="namedvariable">名前付き変数 <span class="frm">(@since LastaFlute-1.0.0)</span></h3>
+	<p>
+		変数に名前を付けることもできます。中括弧 {} で囲って、その中に名前を入れます。e.g. {sea}
+	</p>
+<pre><span class="codetitle">e.g. named variable message @[app]_message.properties</span><code>
+errors.maihama = <span class="attribute">{sea}</span> of dreams
+</code></pre>
+	<ul class="codeoutro">
+		<li>ただし、{item} は予約されている言葉なので、動的パラメーターの名前としては利用できない</li>
+		<li>Javaの引数名で使える文字であること (記号とかは利用できない)</li>
+		<li>同じ名前は使わないこと</li>
+	</ul>
+	<p>
+		同じく、FreeGenをすると、自動生成された [App]Messages の add...() メソッドの引数で、動的パラメーターを指定することができます。
+		指定された名前がそのまま引数名になります。
+	</p>
+	<h4>DBFlute-1.1.4 より</h4>
+	<p>
+		指定された名前がソートされて引数の順番になります。
+	</p>
+	<ul>
+		<li>{sea} of {land} であれば、String land, String sea つまり自然ソート</li>
+		<li>ただ、特別なのもあって、{min} and {max} ならString min, String max</li>
+	</ul>
+	<p>
+		実際に、どうソートされるかはあまり意識する必要はなく、固定化されるということに意義があります。
+		これは、以下のことを考慮してあえてこのようにしています。
+	</p>
+	<ul>
+		<li>後からメッセージ(自然言語)の都合で、変数位置を変えてもプログラムに影響がない</li>
+		<li>多言語対応のとき他の言語では入れ替わる可能性があるので、出現位置への意識は少ない方が良い</li>
+		<li>☆多言語対応のとき他の言語で入れ替わっても、正確にマッピングできるようにするため</li>
+	</ul>
+	<p>
+		<span class="frm">※基本的に、LastaFlute-1.0.0 以上であれば DBFlute-1.1.4 以上を利用しましょう。
+		互いに処理を合わせて作っているので、一番スマートに利用できます。</span>
+	</p>
+	<h4>DBFlute-1.1.3 まで</h4>
+	<p>
+		メッセージの出現位置の順番で、引数になります。
+	</p>
+	<ul>
+		<li>{sea} of {land} であれば、String sea, String land</li>
+		<li>{land} of {sea} だと逆に、String land, String sea</li>
+	</ul>
+	<p>
+		これだと、後からメッセージの都合で変数位置を変えた場合、プログラムの引数指定も修正してあげないといけません。
+		また、内部的な話ですが、多言語対応のときに他の言語で入れ替わったときに、正確にマッピングができません。
+	</p>
+	<h4>もろもろ補足</h4>
+	<p>
+		古いバージョン <span class="frm">(@before LastaFlute-1.0.0)</span> では、名前付きパラメーターが利用できません。
+		FreeGenで自動生成はされますが、実際に処理をすると NumberFormatException が発生します。
+		厳密には、Validatorアノテーションによるメッセージでは利用できますが、messages.add...()メソッドによるメッセージでは利用できません。
+		そのときはインデックス変数を使いましょう。
+	</p>
+	<p>
+		ちなみに、組み込みのメッセージ (Hibernate Validator のアノテーションに対応したメッセージ)
+		に関しては、渡せるパラメーターが固定化されているので、そちらで使うことは基本的になく、アプリ独自のメッセージを追加するときに使うことが想定されます。
+	</p>
+	<p>
+		あと、メッセージに変数をたくさん付けることはあまりないと思うので、インデックス変数で十分かもしれません。
+		Hibernate Validator の都合により、名前付き変数もサポートしているだけと言えるかもです。
+	</p>
+
+	<h2 id="i18n">メッセージの多言語対応</h2>
+	<p>
+		TODO jflute now writing... [app]_message_ja.properties を作って、UserLocale...
+	</p>
+
+</div>
+</div>
+
+<div id="sidebar">
+	<div class="logo"><a href="../../../../"><img src="../../../../image/parts/logo.png" alt="dbflute-logo" width="240" height="110" /></a></div>
+<ul>
+		<li><a href="../../../../ja/lastaflute/index.html">LastaFluteトップページ</a>
+			<ul>
+				<li><a href="../../../../ja/lastaflute/index.html#about">LastaFluteとは？</a></li>
+				<li><a href="../../../../ja/lastaflute/index.html#lacode">LastaFluteのコード</a></li>
+				<li class="upper-space"><a href="../../../../ja/lastaflute/index.html#quicktrial">動かしてみよう</a></li>
+				<li><a href="../../../../ja/lastaflute/index.html#newproject">新プロジェクト</a></li>
+				<li><a href="https://github.com/lastaflute/lastaflute">LastaFlute | Github</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../ja/lastaflute/tutorial/laimpl.html">LastaFlute実装チュートリアル</a>
+			<ul>
+				<li><a href="../../../../ja/lastaflute/tutorial/laimpl.html#style">実装スタイル</a></li>
+				<li><a href="../../../../ja/lastaflute/tutorial/laimpl.html#prepare">まず準備</a></li>
+				<li class="upper-space"><a href="../../../../ja/lastaflute/tutorial/laimpl.html#acquaintanceship">ディベロッパーの心得</a></li>
+				<li><a href="../../../../ja/lastaflute/tutorial/laimpl.html#tenclause">ディベロッパーの十か条</a></li>
+				<li><a href="../../../../ja/lastaflute/tutorial/faqimpl.html">LastaFluteの実装FAQ</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../ja/lastaflute/howto/action/index.html">LastaFlute の Action</a>
+			<ul>
+				<li><a href="../../../../ja/lastaflute/howto/action/makeashtml.html">Actionの作り方 (HTML)</a></li>
+				<li><a href="../../../../ja/lastaflute/howto/action/makeasjson">Actionの作り方 (JSON)</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../ja/lastaflute/howto/impldesign/actiondesign.html">Actionの実装デザイン</a>
+			<ul>
+				<li><a href="../../../../ja/lastaflute/howto/impldesign/logicdesign.html">Logicの実装デザイン</a></li>
+				<li><a href="../../../../ja/lastaflute/howto/impldesign/beandesign.html">Beanの実装デザイン</a></li>
+				<li><a href="../../../../ja/lastaflute/howto/impldesign/jsondesign.html">JSON APIのデザイン</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../ja/lastaflute/howto/upgrade/index.html">LastaFluteのアップグレード</a>
+			<ul>
+				<li><a href="../../../../ja/lastaflute/howto/upgrade/lachangelog.html">ChangeLog</a></li>
+				<li><a href="../../../../ja/lastaflute/howto/upgrade/migration/index.html">移行情報(注意点など)</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../ja/lastaflute/lastadi/index.html">Lasta Diトップページ</a>
+			<ul>
+				<li><a href="../../../../ja/lastaflute/lastadi/index.html#twocomp">Two Components</a></li>
+				<li><a href="../../../../ja/lastaflute/lastadi/dixmlexp.html">Di xml の表現</a></li>
+				<li><a href="https://github.com/lastaflute/lasta-di">Lasta Di | Github</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../ja/tutorial/onjava8.html">DBFlute on Java8</a>
+			<ul>
+				<li><a href="../../../../ja/tutorial/onjava8.html#select">とにかく検索は？</a></li>
+				<li><a href="../../../../ja/tutorial/onjava8.html#completion">さあ、補完してみよう！</a></li>
+			</ul>
+		</li>
+	</ul>
+
+</div>
+
+<div id="footer">
+	<div><a href="../../../../ja/sitemap.html">SiteMap</a> <a href="http://d.hatena.ne.jp/jflute">Author's Blog</a><a href="https://www.seasar.org/issues/browse/DBFLUTE">BTS</a></div>
+	<ul class="footer-navi">
+		<li class="hd-introduction"><a href="../../../../ja/introduction/index.html">Introduction</a></li>
+		<li class="hd-tutorial"><a href="../../../../ja/tutorial/index.html">Tutorial</a>
+			<ul>
+				<li class="hd-architect"><a href="../../../../ja/tutorial/architect.html">for Architect</a></li>
+				<li class="hd-developer"><a href="../../../../ja/tutorial/developer.html">for Developer</a></li>
+			</ul>
+		</li>
+		<li class="hd-environment"><a href="../../../../ja/environment/index.html">Environment</a>
+			<ul>
+				<li class="hd-install"><a href="../../../../ja/environment/setup/index.html">Setup</a></li>
+				<li class="hd-upgrade"><a href="../../../../ja/environment/upgrade/index.html">Upgrade</a></li>
+			</ul>
+		</li>
+		<li class="hd-manual"><a href="../../../../ja/manual/index.html">Manual</a></li>
+	</ul>
+
+</div>
+
+</div>
+</body>
+</html>

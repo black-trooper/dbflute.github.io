@@ -1,0 +1,330 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja" lang="ja" >
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<meta http-equiv="Content-Style-Type" content="text/css" />
+	<meta name="keywords" content="DBFlute,外だしSQL,OutsideSql,selectList,リスト検索" />
+	<link rel="stylesheet" type="text/css" href="../../../../../../css/sub.css" />
+	<!--[if IE 6.0]>
+		<link rel="stylesheet" type="text/css" href="../../../../../../css/cb/sub.css" />
+	<![endif]--> 
+	<title>(外だしSQL)selectList() | DBFlute</title>
+</head>
+<body>
+<div id="container" class="ct-manual">
+
+<div id="mainbar">
+<div id="header">
+	<div class="navi-upper"><a href="../../../../../../ja/sitemap.html">SiteMap</a>|<a href="http://d.hatena.ne.jp/jflute/">Author's Blog</a></div>
+	<div class="navi-main">
+	<ul>
+		<li class="hd-introduction"><a href="../../../../../../ja/introduction/index.html"><img src="../../../../../../image/parts/navi/link-intro.png" alt="Introduction" width="75" height="32" /></a></li>
+		<li class="hd-tutorial"><a href="../../../../../../ja/tutorial/index.html"><img src="../../../../../../image/parts/navi/link-tuto.png" alt="Tutorial" width="56" height="24" /></a>
+			<ul>
+				<li class="hd-architect"><a href="../../../../../../ja/tutorial/architect.html"><img src="../../../../../../image/parts/navi/link-arch.png" alt="for Architect" width="80" height="24" /></a></li>
+				<li class="hd-developer"><a href="../../../../../../ja/tutorial/developer.html"><img src="../../../../../../image/parts/navi/link-dev.png" alt="for Developer" width="87" height="24" /></a></li>
+			</ul>
+		</li>
+		<li class="hd-environment"><a href="../../../../../../ja/environment/index.html"><img src="../../../../../../image/parts/navi/link-env.png" alt="Environment" width="84" height="25" /></a>
+			<ul>
+				<li class="hd-install"><a href="../../../../../../ja/environment/setup/index.html"><img src="../../../../../../image/parts/navi/link-setup.png" alt="Setup" width="42" height="24" /></a></li>
+				<li class="hd-upgrade"><a href="../../../../../../ja/environment/upgrade/index.html"><img src="../../../../../../image/parts/navi/link-upgrade.png" alt="Upgrade" width="61" height="25" /></a></li>
+			</ul>
+		</li>
+		<li class="hd-manual"><a href="../../../../../../ja/manual/index.html"><img src="../../../../../../image/parts/navi/link-manual.png" alt="Manual" width="62" height="25" /></a></li>
+	</ul>
+	</div>
+</div>
+
+<div id="content">
+	<h1>(外だしSQL)selectList()</h1>
+	<p>
+		"外だしSQLの使い方" を既に読んでいることが前提となります。
+	</p>
+	<div class="relatedpage"><a href="../howto.html">外だしSQLの使い方</a></div>
+	<ul class="indexlist">
+		<li><a href="#overview">概要</a></li>
+		<li><a href="#howto">実装方法</a>
+			<ul>
+				<li><a href="#methodcall">メソッドの呼び出し</a></li>
+				<li><a href="#typedcall">定型呼び出し形式</a></li>
+				<li><a href="#freestyle">フリースタイル形式</a></li>
+				<li><a href="#resulttype">検索結果の受け取り</a></li>
+				<li><a href="#nohit">検索結果が存在しない場合</a></li>
+			</ul>
+		</li>
+		<li><a href="#scalar">スカラ型で受け取る</a></li>
+		<li><a href="#bypagingsql">ページングのSQLでリスト検索</a>
+			<ul>
+				<li><a href="#bypagingsqlabout">大量データ検索の抑制のため？</a></li>
+				<li><a href="#bypagingsqlhowto">ExクラスにてListHandlingPmbとboolean制御</a></li>
+			</ul>
+		</li>
+	</ul>
+
+	<h2 id="overview">概要</h2>
+	<p>
+		<em class="keyword">外だしSQLでリスト検索</em> をします。
+	</p>
+	<p>
+		会話上では、<em class="keyword">(外だしSQLの)せれくとりすと</em> と表現します。
+	</p>
+
+	<h2 id="howto">実装方法</h2>
+	<h3 id="methodcall">メソッドの呼び出し</h3>
+	<p>
+		outsideSql() の後、<em class="keyword">selectList()</em> を呼び出します。
+	</p>
+<pre><span class="codetitle">e.g. 外だしSQLの一件検索の実装手順 (Eclipseでコード補完) @Java</span><code>
+<span class="attribute">memberBhv</span>.o <span class="comment">// .o と打って enter</span>
+--
+<span class="attribute">memberBhv</span>.outsideSql().s <span class="comment">// .s と打って enter</span>
+--
+<span class="attribute">memberBhv</span>.outsideSql().<span class="point">selectList</span>(path, pmb, entityType);
+<span class="comment">// あらかじめ補完される引数の名前に合わせておくとスムーズに</span>
+</code></pre>
+	<p>
+		メソッドはオーバーロードで "定型呼び出し形式" と "フリースタイル形式" と二つあります。
+	</p>
+	<h3 id="typedcall">定型呼び出し形式</h3>
+	<p>
+		TypedParameterBean を引数に受け取ります。(null は許可されません)
+	</p>
+	<div class="detailpage"><a href="../../../generator/task/sql2entity/parameterbean.html#typed">TypedParameterBean</a></div>
+	<p>
+		CustomizeEntityマーク、および、ParameterBeanマークが定義されていることで TypedParameterBean
+		の定型呼び出しが利用できます。
+	</p>
+	<h3 id="freestyle">フリースタイル形式</h3>
+	<p>
+		パス、パラメータ(ParameterBean)、戻り値Entityの型の三つの要素を引数に受け取ります。 
+		それぞれフリースタイル形式の基本仕様と全く同じです。
+	</p>
+	<div class="relatedpage"><span class="working"><!-- <a href="../howto.html#freestylebasic"> -->外だしSQLの使い方 - フリースタイル基本仕様<!-- </a> --></span></div>
+	<h3 id="resulttype">検索結果の受け取り</h3>
+	<p>
+		検索結果は、TypedParameterBean に関連付けられている Entity 型、もしくは、第三引数で指定した Entity
+		型の <em class="keyword">ListResultBean</em> を戻り値として受け取ります。
+	</p>
+<pre><span class="codetitle">e.g. 外だしSQLの一件検索の実装 @Java</span><code>
+String path = MemberBhv.<span class="attribute">PATH_selectSimpleMember</span>;
+SimpleMemberPmb pmb = <span class="keyword">new</span> SimpleMemberPmb();
+pmb.setMemberId(<span class="literal">3</span>);
+Class&lt;?&gt; entityType = SimpleMember.<span class="keyword">class</span>;
+ListResultBean&lt;SimpleMember&gt; memberList = 
+    <span class="attribute">memberBhv</span>.outsideSql().<span class="point">selectList</span>(path, pmb, entityType)
+</code></pre>
+	<p>
+		リストの型は、<em class="keyword">ListResultBean</em> となります。java.util.List
+		の実装クラスなので、そのままリストとして利用できます。(java.util.List型で受け取っても問題ありません)
+	</p>
+	<div class="relatedpage"><a href="../../behavior/resultbean/list/index.html">Behavior - ListResultBean</a></div>
+	<h3 id="nohit">検索結果が存在しない場合</h3>
+	<p>
+		検索結果が存在しない場合の戻り値は空のリストです。null は絶対に戻りません。
+	</p>
+
+	<h2 id="scalar">スカラ型で受け取る</h2>
+	<p>
+		SQL上の select 句のカラムを一つにして、検索結果を String や Integer
+		などのスカラ値(スカラ型)のリストで受け取ることも可能です。TypedParameterBean
+		ではCustomizeEntityマークに加えて scalar オプションを付与します。
+	</p>
+	<div class="detailpage"><a href="../../../generator/task/sql2entity/customizeentity.html#scalar">CustomizeEntity - ScalarHandling</a></div>
+<pre><span class="codetitle">e.g. スカラ型のオプションを指定 {MemberBhv_selectMemberName.sql} @SQL-File</span><code>
+<span class="comment">-- #df:entity#</span>
+<span class="comment">-- +scalar+</span>
+<span class="keyword">select</span> MEMBER_NAME
+  <span class="keyword">from</span> MEMBER
+</code></pre>
+<pre><span class="codetitle">e.g. 文字列のスカラ値のリストを検索 @Java</span><code>
+MemberNamePmb pmb = <span class="keyword">new</span> MemberNamePmb();
+ListResultBean&lt;String&gt; valueList = 
+    <span class="attribute">memberBhv</span>.outsideSql().<span class="point">selectList</span>(pmb)
+<span class="comment">// select MEMBER_NAME from ... where MEMBER_STATUS_CODE = ...</span>
+</code></pre>
+	<p>
+		スカラ値での検索においても、検索結果がない場合の扱いについては全く同じです。
+	</p>
+
+	<h2 id="bypagingsql">ページングのSQLでリスト検索</h2>
+	<h3 id="bypagingsqlabout">大量データ検索の抑制のため？</h3>
+	<p>
+		ページング検索のSQLをリスト検索でも使いたい、というような場合、少し工夫が必要です。
+	</p>
+	<p>
+		通常、ページング検索のSQLはリスト検索では利用できません。自動生成された TypedParameterBean が ListHandlingPmb
+		インターフェースと関連付かないので、selectList()の引数でコンパイルエラーになるようになっています。
+	</p>
+	<p>
+		ページング検索を想定しているSQLなのであれば、そのままページング条件なしに検索すると大量データ検索になる可能性があるため、安全のために共有できないようになっています。
+		業務要件的にも、同じになることはほとんどないだろうという想定です。あるとすれば、リスト検索ではなくカーソル検索を想定しています。ページング検索とカーソル検索は共有できます。
+		<span class="frm">(まずは、カーソル検索の方がマッチするのでは？ということを考えると良いでしょう)</span>
+	</p>
+	<div class="relatedpage"><a href="./selectcursor.html#bypagingsql">ページングのSQLでカーソル検索</a></div>
+	<p>
+		ただ、業務要件的に固定条件が入って大量データ検索にならないことが保証されているような場合であれば、ページング検索のSQLをリスト検索でも使いたくなることはあるかもしれません。
+	</p>
+	<h3 id="bypagingsqlhowto">ExクラスにてListHandlingPmbとboolean制御</h3>
+	<p>
+		ManualPagingの外だしSQLのページング条件部分にて、リスト検索時はページング条件が無効になるように isListHandling() の条件分岐を入れます。
+		<span class="frm">(代理判定メソッドの自動判別の機能を使っています)</span>
+	</p>
+	<div class="relatedpage"><a href="../../../generator/task/sql2entity/pmbautodetect.html#alternatebool">代理判定メソッドの自動判別</a></div>
+<pre><span class="codetitle">e.g. ページングのSQLの中に、リスト検索のための条件分岐を指定 @SQL-File</span><code>
+ <span class="comment">/*IF pmb.isPaging()*/</span>
+ <span class="keyword">order by</span> PURCHASE_MAX_PRICE <span class="keyword">desc nulls last</span>, mb.MEMBER_ID <span class="keyword">asc</span>
+ <span class="comment">/*IF !pmb.<span class="point">isListHandling()</span>*/</span>
+ <span class="keyword">limit</span> <span class="comment">/*pmb.fetchSize*/</span>20 <span class="keyword">offset</span> <span class="comment">/*pmb.pageStartIndex*/</span>80
+ <span class="comment">/*END*/</span>
+ <span class="comment">/*END*/</span>
+</code></pre>
+	<ul class="codeoutro">
+		<li>ページング条件の制御のために、必ず ManualPaging である必要があります</li>
+	</ul>
+	<p>
+		ParameterBean のExクラスにて、ListHandlingPmbインターフェースをimplementsして、共有のためのboolean制御を行います。
+		<span class="frm">(少し特殊ですので、別の人が見たときに迷わせないようにコメントを書いておきましょう。このドキュメントへのURLを記載しておくと良いです)</span>
+	</p>
+<pre><span class="codetitle">e.g. ParameterBean のExクラスにて、ListHandlingPmbとboolean制御 @Java</span><code>
+<span class="abbreviation">...</span>
+<span class="comment"> * @author DBFlute(AutoGenerator)
+ * @author jflute
+ */</span>
+<span class="keyword">public class</span> PagingWithListMemberPmb <span class="keyword">extends</span> BsPagingWithListMemberPmb <span class="comment">// can select list</span>
+        <span class="keyword">implements</span> ListHandlingPmb&lt;MemberBhv, PagingWithListMember&gt; {
+
+    <span class="keyword">private boolean</span> <span class="attribute">listHandling</span>;
+
+    @Override
+    <span class="keyword">public boolean</span> isPaging() { <span class="comment">// not to depend on framework default value</span>
+        <span class="keyword">return</span> <span class="keyword">super</span>.isPaging() || <span class="attribute">listHandling</span>; <span class="comment">// always true if list handling</span>
+    }
+
+    @Override
+    <span class="keyword">public boolean</span> isListHandling() { <span class="comment">// to suppress paging condition</span>
+        <span class="keyword">return</span> <span class="attribute">listHandling</span>;
+    }
+
+    <span class="comment">/**
+     * Use parameter-bean for list handling.
+     */</span>
+    <span class="keyword">public void</span> forListHandling() {
+        <span class="attribute">listHandling</span> = <span class="keyword">true</span>;
+    }
+}
+</code></pre>
+	<ul class="codeoutro">
+		<li>ListHandlingPmbのジェネリック型は、Bsクラスと同じものを</li>
+		<li>isPaging()のオーバーライドは必須ではないが、フレームワークのデフォルト値に依存しないように</li>
+		<li>クラスのJavaDocにauthorを付けるポリシーの場合は、ここでも忘れずに</li>
+	</ul>
+	<p>
+		そして、リスト検索を実行するときに(だけ)、forListHandling() メソッドを呼びます。
+	</p>
+<pre><span class="codetitle">e.g. リスト検索であることを示して外だしSQLを実行 @Java</span><code>
+PagingWithListMemberPmb pmb = <span class="keyword">new</span> PagingWithListMemberPmb();
+pmb.<span class="point">forListHandling()</span>;
+
+ListResultBean&lt;PagingWithListMember&gt; memberList = memberBhv.outsideSql().selectList(pmb);
+
+<span class="abbreviation">...</span>
+</code></pre>
+	<p>
+		手動による制御なので、ページング検索側のプログラムも含めて、しっかりテストをしましょう。
+	</p>
+
+</div>
+</div>
+
+<div id="sidebar">
+	<div class="logo"><a href="../../../../../../"><img src="../../../../../../image/parts/logo.png" alt="dbflute-logo" width="240" height="110" /></a></div>
+<ul>
+		<li><a href="../../../../../../ja/manual/function/generator/index.html">自動生成ツール</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/generator/client/index.html">DBFluteクライアント</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/engine/index.html">DBFluteエンジン</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/index.html">DBFluteタスク</a>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/generator/task/generate/index.html">Generate</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/sql2entity/index.html">Sql2Entity</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/generator/task/replaceschema/index.html">ReplaceSchema</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/manage/index.html">Manage</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/doc/schemahtml.html">SchemaHTML</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/function/ormapper/index.html">O/Rマッパ</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/ormapper/behavior/index.html">Behavior</a></li>
+				<li><a href="../../../../../../ja/manual/function/ormapper/conditionbean/index.html">ConditionBean</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/ormapper/outsidesql/index.html">OutsideSql</a></li>
+				<li><a href="../../../../../../ja/manual/function/ormapper/entity/index.html">Entity</a></li>
+				<li><a href="../../../../../../ja/manual/function/ormapper/runtime/index.html">DBFluteランタイム</a></li>
+			</ul>
+		</li>
+		<li>
+			<a href="../../../../../../ja/manual/function/genbafit/index.html">現場フィット</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/genbafit/implfit/index.html">アプリ実装の全体最適</a></li>
+				<li><a href="../../../../../../ja/manual/function/genbafit/projectfit/index.html">プロジェクト構成対応</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/genbafit/runtimefit/index.html">実行時共通要件の実現</a></li>
+				<li><a href="../../../../../../ja/manual/function/genbafit/deprecatedfit/index.html">非推奨な構造フォロー</a></li>
+				<li><a href="../../../../../../ja/manual/function/genbafit/dbflutefit/index.html">DBFluteサポート</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/function/helper/index.html">支援ツール</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/generator/intro/index.html">DBFlute Intro</a></li>
+				<li><a href="../../../../../../ja/manual/function/helper/emecha/index.html">EMecha (Eclipse Plugin)</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/helper/maven/index.html">Maven DBFlute Plugin</a></li>
+				<li><a href="../../../../../../ja/manual/function/helper/saflute/index.html">SAFlute</a></li>
+				<li><a href="../../../../../../ja/manual/function/helper/utflute/index.html">UTFlute</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/reference/index.html">リファレンス</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/reference/dbway/index.html">DBMSごとの取扱い</a></li>
+				<li><a href="../../../../../../ja/manual/reference/diway/index.html">DIコンテナごとの取扱い</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/reference/dfprop/index.html">DBFluteプロパティ</a></li>
+				<li><a href="../../../../../../ja/manual/reference/dictionary/index.html">DBFlute用語集</a></li>
+				<li><a href="../../../../../../ja/manual/reference/example/index.html">DBFlute Example</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/reference/faq/index.html">FAQ</a></li>
+				<li><a href="../../../../../../ja/manual/reference/troubleshooting/index.html">トラブルシューティング</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/topic/index.html">トピック</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/topic/dbdesign/index.html">DB設計</a></li>
+				<li><a href="../../../../../../ja/manual/topic/programming/index.html">プログラミング</a></li>
+				<li><a href="../../../../../../ja/manual/topic/friends/index.html">他のフレームワーク</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/topic/office/index.html">事務的な話</a></li>
+				<li><a href="../../../../../../ja/manual/topic/dbflutenet/index.html">DBFlute.NET</a></li>
+			</ul>
+		</li>
+	</ul>
+
+</div>
+
+<div id="footer">
+	<div><a href="../../../../../../ja/sitemap.html">SiteMap</a> <a href="http://d.hatena.ne.jp/jflute">Author's Blog</a><a href="https://www.seasar.org/issues/browse/DBFLUTE">BTS</a></div>
+	<ul class="footer-navi">
+		<li class="hd-introduction"><a href="../../../../../../ja/introduction/index.html">Introduction</a></li>
+		<li class="hd-tutorial"><a href="../../../../../../ja/tutorial/index.html">Tutorial</a>
+			<ul>
+				<li class="hd-architect"><a href="../../../../../../ja/tutorial/architect.html">for Architect</a></li>
+				<li class="hd-developer"><a href="../../../../../../ja/tutorial/developer.html">for Developer</a></li>
+			</ul>
+		</li>
+		<li class="hd-environment"><a href="../../../../../../ja/environment/index.html">Environment</a>
+			<ul>
+				<li class="hd-install"><a href="../../../../../../ja/environment/setup/index.html">Setup</a></li>
+				<li class="hd-upgrade"><a href="../../../../../../ja/environment/upgrade/index.html">Upgrade</a></li>
+			</ul>
+		</li>
+		<li class="hd-manual"><a href="../../../../../../ja/manual/index.html">Manual</a></li>
+	</ul>
+
+</div>
+
+</div>
+</body>
+</html>

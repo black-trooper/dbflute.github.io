@@ -1,0 +1,285 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja" lang="ja" >
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<meta http-equiv="Content-Style-Type" content="text/css" />
+	<meta name="keywords" content="DBFlute,タスク,Task,Doc,HistoryHTML,変更履歴,スキーマの差分,DB変更内容" />
+	<link rel="stylesheet" type="text/css" href="../../../../../../css/sub.css" />
+	<!--[if IE 6.0]>
+		<link rel="stylesheet" type="text/css" href="../../../../../../css/cb/sub.css" />
+	<![endif]--> 
+	<title>HistoryHTML | DBFlute</title>
+</head>
+<body>
+<div id="container" class="ct-manual">
+
+<div id="mainbar">
+<div id="header">
+	<div class="navi-upper"><a href="../../../../../../ja/sitemap.html">SiteMap</a>|<a href="http://d.hatena.ne.jp/jflute/">Author's Blog</a></div>
+	<div class="navi-main">
+	<ul>
+		<li class="hd-introduction"><a href="../../../../../../ja/introduction/index.html"><img src="../../../../../../image/parts/navi/link-intro.png" alt="Introduction" width="75" height="32" /></a></li>
+		<li class="hd-tutorial"><a href="../../../../../../ja/tutorial/index.html"><img src="../../../../../../image/parts/navi/link-tuto.png" alt="Tutorial" width="56" height="24" /></a>
+			<ul>
+				<li class="hd-architect"><a href="../../../../../../ja/tutorial/architect.html"><img src="../../../../../../image/parts/navi/link-arch.png" alt="for Architect" width="80" height="24" /></a></li>
+				<li class="hd-developer"><a href="../../../../../../ja/tutorial/developer.html"><img src="../../../../../../image/parts/navi/link-dev.png" alt="for Developer" width="87" height="24" /></a></li>
+			</ul>
+		</li>
+		<li class="hd-environment"><a href="../../../../../../ja/environment/index.html"><img src="../../../../../../image/parts/navi/link-env.png" alt="Environment" width="84" height="25" /></a>
+			<ul>
+				<li class="hd-install"><a href="../../../../../../ja/environment/setup/index.html"><img src="../../../../../../image/parts/navi/link-setup.png" alt="Setup" width="42" height="24" /></a></li>
+				<li class="hd-upgrade"><a href="../../../../../../ja/environment/upgrade/index.html"><img src="../../../../../../image/parts/navi/link-upgrade.png" alt="Upgrade" width="61" height="25" /></a></li>
+			</ul>
+		</li>
+		<li class="hd-manual"><a href="../../../../../../ja/manual/index.html"><img src="../../../../../../image/parts/navi/link-manual.png" alt="Manual" width="62" height="25" /></a></li>
+	</ul>
+	</div>
+</div>
+
+<div id="content">
+	<h1>HistoryHTML</h1>
+	<p>
+		Alto DBFlute のパートです。
+	</p>
+	<div class="relatedpage"><a href="../../../../../introduction/altodbflute.html">Alto DBFlute</a></div>
+	<ul class="indexlist">
+		<li><a href="#about">HistoryHTMLとは？</a>
+			<ul>
+				<li><a href="#basicexample">HistoryHTMLの例</a></li>
+			</ul>
+		</li>
+		<li><a href="#sequence">シーケンス定義の違い</a></li>
+		<li><a href="#columnorder">カラム定義順序の違い</a></li>
+		<li><a href="#dbcomment">DBコメントの違い</a></li>
+		<li><a href="#procedure">ストアドプロシージャの違い</a></li>
+		<li><a href="#craftdiff">手作り差分チェック (CraftDiff)</a></li>
+		<li><a href="#comment">コメントの付与</a></li>
+		<li><a href="#miscspec">もろもろの細かいお話</a>
+			<ul>
+				<li><a href="#constraintname">制約名の変更は対象外</a></li>
+				<li><a href="#schemahtml">SchemaHTMLとの連携</a></li>
+				<li><a href="#splithistory">頃合いをみて分割</a></li>
+			</ul>
+		</li>
+	</ul>
+
+	<h2 id="about">HistoryHTMLとは？</h2>
+	<p>
+		スキーマの変更履歴を人が見やすい形にまとめたドキュメントです。<span class="frm">@since 0.9.7.1</span>
+	</p>
+	<div class="detailpage"><a href="../../../../../data/doc/harbor/history-maihamadb.html">HistoryHTML (history-maihamadb.html)</a></div>
+	<p>
+		DBFluteが自動生成のためにメタデータを取得するたびに、一つ前のメタデータと内容の比較をしてスキーマ構造に違いがあった部分だけをドキュメントにまとめます。
+	</p>
+	<h3 id="basicexample">HistoryHTMLの例</h3>
+	<p class="imgbox">HistoryHTMLの例
+		<a href="../../../../../data/doc/harbor/history-maihamadb.html" title="HistoryHTML Example"><img src="../../../../../data/model/alto/doc/doc-HistoryHtml-example.png" alt="HistoryHTML Example" width="550" height="700" /></a>
+	</p>
+	<p>
+		DB変更は、実はDB設計者にとっても重い作業です。変更内容を記録し、通知しなければなりません。たくさんある場合などはその記録が追いつかない場合もしばしば。
+		とはいえ、記録がなければ、そのDB変更がいつ頃のものだったのか(どういうきっかけだったのか)、わかりにくくなってしまいます。通知がなければ、ディベロッパーは困ります。
+		DBFluteは、常にDB構造が通過する部分でもあります。その記録と通知の支援になるドキュメントを生成できれば、DB設計者もディベロッパーも助かると考えています。
+	</p>
+
+	<h2 id="sequence">シーケンス定義の違い</h2>
+	<p>
+		PostgreSQL や Oracle のシーケンスも差分として認識されます<span class="frm">(@since 0.9.9.7F)</span>。
+	</p>
+	<p>
+		シーケンスの追加や削除、インクリメントサイズの変更や初期値などがチェックされます。
+	</p>
+
+	<h2 id="columnorder">カラム定義順序の違い</h2>
+	<p>
+		デフォルトでは、テーブル内のカラム定義の順序の違いは差分として認識されません。
+		アプリケーションの動作に影響する可能性が低い要素であり、単なる順序調整も一つのDB変更と認識されてしまうとノイズになってしまうからです。
+	</p>
+	<p>
+		ただ、カラム定義順序を重視するアプリケーションである場合は、documentDefinitionMap.dfprop の isCheckColumnDefOrderDiff
+		を true にすることで、カラム定義順序も差分として認識されるようになります。<span class="frm">@since 0.9.9.0D</span>
+	</p>
+	<div class="relatedpage"><a href="../../../../reference/dfprop/documentdefinition/index.html#ischeckcolumndeforderdiff">dfprop - isCheckColumnDefOrderDiff</a></div>
+
+	<h2 id="dbcomment">DBコメントの違い</h2>
+	<p>
+		デフォルトでは、テーブルやカラムのDBコメントの違いは差分として認識されません。
+		アプリケーションの動作に影響する可能性が低い要素であり、単なる文言修正も一つのDB変更と認識されてしまうとノイズになってしまうからです。
+	</p>
+	<p>
+		ただ、DBコメントの履歴を重視するアプリケーションである場合は、documentDefinitionMap.dfprop の isCheckDbCommentDiff
+		を true にすることで、DBコメントも差分として認識されるようになります。<span class="frm">@since 0.9.9.0D</span>
+	</p>
+	<div class="relatedpage"><a href="../../../../reference/dfprop/documentdefinition/index.html#ischeckdbcommentdiff">dfprop - isCheckDbCommentDiff</a></div>
+
+	<h2 id="procedure">ストアドプロシージャの違い</h2>
+	<p>
+		オプションで、プロシージャの差分もチェックできます<span class="frm">(@since 0.9.9.7F)</span>。
+	</p>
+	<p>
+		documentDefinitionMap.dfprop の isCheckProcedureDiff を true
+		にすることで、プロシージャも差分として認識されるようになります。
+	</p>
+	<div class="relatedpage"><a href="../../../../reference/dfprop/documentdefinition/index.html#ischeckprocedurediff">dfprop - isCheckProcedureDiff</a></div>
+	<p>
+		プロシージャの追加や削除、プロシージャのソースコードの行数、文字数、ハッシュ値がチェックされます。
+		プロシージャの行単位での具体的な差分は表示できませんが、"とにかく何かが違う"
+		というのを知ることができます(一文字でも違えばハッシュ値が差分となります)。
+		具体的な差分は別途優秀なDIFFツールなどで追う方が見やすいと考え、DBFluteでは検知だけにしています。
+	</p>
+	<p>
+		以下の例では、SP_IN_OUT_PARAMETERというプロシージャが、行数が一行減った上にソースコードの文字数が30文字減ったことがわかります。
+		もし、行数も変わらず文字数も全く同じになる変更だったとしても、ハッシュ値だけが差分として検知され、"何かが変わった"
+		ということだけはわかります。<span class="frm">(ただし、天文学的な確率で同じハッシュ値になってしまうことはあり得ますが...)</span>
+	</p>
+	<p class="imgbox">ProcedureDiffの例
+		<a href="../../../../../data/model/alto/doc/doc-ProcedureDiff-example.png" title="ProcedureDiff Example"><img src="../../../../../data/model/alto/doc/doc-ProcedureDiff-example.png" alt="ProcedureDiff Example" width="550" height="220" /></a>
+	</p>
+
+	<h2 id="craftdiff">手作り差分チェック (CraftDiff)</h2>
+	<p>
+		DBFluteではチェックされない要素を独自にチェック対象にさせることもできます。
+		スキーマやテーブルの権限にマスタデータなど、SQLで検索できるものであればなんでも差分チェックできます。
+	</p>
+	<div class="detailpage"><a href="../../../genbafit/projectfit/craftdiff/index.html">現場フィット - 手作り差分チェック (CraftDiff)</a></div>
+
+	<h2 id="comment">コメントの付与</h2>
+	<p>
+		ある時点のDB変更が、(業務的に)どういうものだったのかをコメントすることができます。<span class="frm">@since 0.9.7.2</span>
+	</p>
+	<p>
+		DBFluteクライアント/schema/project-history-exampledb.diffmap
+		を直接編集し、"comment" という項目にコメントを書くと、HistoryHTML でそれが表示されるようになります。
+	</p>
+<pre><span class="codetitle">e.g. DB変更にコメントを付与 @project-history-exampledb.diffmap</span><code>
+<span class="abbreviation">...</span>
+    ; 2010/11/26 19:52:15 = <span class="keyword">map:</span>{
+        ; diffDate = 2010/11/26 19:52:15
+        ; <span class="point">comment = 会員検索画面追加によるDB変更</span>
+        ; tableCount = <span class="keyword">map:</span>{
+            ; next = 16
+            ; previous = 13
+        }
+<span class="abbreviation">...</span>
+</code></pre>
+
+	<h2 id="miscspec">もろもろの細かいお話</h2>
+	<h3 id="constraintname">制約名の変更は対象外</h3>
+	<p>
+		制約名の変更、例えば、PKの制約名の変更、FKの制約名の変更(カラム構成で判断)、これらはドキュメントには記載されません。
+		制約の増減があるわけではないので、あまりディベロッパーにとっても重要度は高い情報ではなく、対象にすると内部的な実現でややこしい問題があるため割り切っています。
+	</p>
+	<p>
+		具体的には、制約名をDDLで省略すると SYS12345 というように自動生成された名前になることもあり、そうするとDBを作り直すたびに制約名は変わって意味のない差分が積み上がってしまう可能性があるのです。
+		よって、少なくとも制約名の変更をデフォルトで差分にすることができないのです。<span class="frm">(自動生成された名前なのかどうかを正確に判別するのは難しいため、差分ノイズが発生しないことを優先しています)</span>
+	</p>
+	<h3 id="schemahtml">SchemaHTMLとの連携</h3>
+	<p>
+		テーブル名(最新で存在するもの)は、SchemaHTMLへのリンクになります。<span class="frm">@since 0.9.7.2</span>
+	</p>
+	<div class="relatedpage"><a href="./schemahtml.html">SchemaHTML</a></div>
+	<h3 id="splithistory">頃合いをみて分割</h3>
+	<p>
+		HistoryHTMLはDB変更があればあるほどどんどん追記されていきます。
+		長い期間の運用であまりに大きくなり過ぎてしまった場合は、HistoryHTML
+		を日付をつけてファイル名変更し、DBFluteクライアント/schema/project-history-exampledb.diffmap
+		を削除(もしくはこれもファイル名変更で保存)することで、HistoryHTMLを分割することができます。
+		<span class="frm">(単に手動でバックアップするだけ...)</span>
+	</p>
+	<p>
+		開発中のDB変更、運用が始まってからのDB変更、二次開発のDB変更というように、フェーズの変わり目で分割していくのも良いでしょう。
+	</p>
+
+</div>
+</div>
+
+<div id="sidebar">
+	<div class="logo"><a href="../../../../../../"><img src="../../../../../../image/parts/logo.png" alt="dbflute-logo" width="240" height="110" /></a></div>
+<ul>
+		<li><a href="../../../../../../ja/manual/function/generator/index.html">自動生成ツール</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/generator/client/index.html">DBFluteクライアント</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/engine/index.html">DBFluteエンジン</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/index.html">DBFluteタスク</a>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/generator/task/generate/index.html">Generate</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/sql2entity/index.html">Sql2Entity</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/generator/task/replaceschema/index.html">ReplaceSchema</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/manage/index.html">Manage</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/doc/schemahtml.html">SchemaHTML</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/function/ormapper/index.html">O/Rマッパ</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/ormapper/behavior/index.html">Behavior</a></li>
+				<li><a href="../../../../../../ja/manual/function/ormapper/conditionbean/index.html">ConditionBean</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/ormapper/outsidesql/index.html">OutsideSql</a></li>
+				<li><a href="../../../../../../ja/manual/function/ormapper/entity/index.html">Entity</a></li>
+				<li><a href="../../../../../../ja/manual/function/ormapper/runtime/index.html">DBFluteランタイム</a></li>
+			</ul>
+		</li>
+		<li>
+			<a href="../../../../../../ja/manual/function/genbafit/index.html">現場フィット</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/genbafit/implfit/index.html">アプリ実装の全体最適</a></li>
+				<li><a href="../../../../../../ja/manual/function/genbafit/projectfit/index.html">プロジェクト構成対応</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/genbafit/runtimefit/index.html">実行時共通要件の実現</a></li>
+				<li><a href="../../../../../../ja/manual/function/genbafit/deprecatedfit/index.html">非推奨な構造フォロー</a></li>
+				<li><a href="../../../../../../ja/manual/function/genbafit/dbflutefit/index.html">DBFluteサポート</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/function/helper/index.html">支援ツール</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/generator/intro/index.html">DBFlute Intro</a></li>
+				<li><a href="../../../../../../ja/manual/function/helper/emecha/index.html">EMecha (Eclipse Plugin)</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/helper/maven/index.html">Maven DBFlute Plugin</a></li>
+				<li><a href="../../../../../../ja/manual/function/helper/saflute/index.html">SAFlute</a></li>
+				<li><a href="../../../../../../ja/manual/function/helper/utflute/index.html">UTFlute</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/reference/index.html">リファレンス</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/reference/dbway/index.html">DBMSごとの取扱い</a></li>
+				<li><a href="../../../../../../ja/manual/reference/diway/index.html">DIコンテナごとの取扱い</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/reference/dfprop/index.html">DBFluteプロパティ</a></li>
+				<li><a href="../../../../../../ja/manual/reference/dictionary/index.html">DBFlute用語集</a></li>
+				<li><a href="../../../../../../ja/manual/reference/example/index.html">DBFlute Example</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/reference/faq/index.html">FAQ</a></li>
+				<li><a href="../../../../../../ja/manual/reference/troubleshooting/index.html">トラブルシューティング</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/topic/index.html">トピック</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/topic/dbdesign/index.html">DB設計</a></li>
+				<li><a href="../../../../../../ja/manual/topic/programming/index.html">プログラミング</a></li>
+				<li><a href="../../../../../../ja/manual/topic/friends/index.html">他のフレームワーク</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/topic/office/index.html">事務的な話</a></li>
+				<li><a href="../../../../../../ja/manual/topic/dbflutenet/index.html">DBFlute.NET</a></li>
+			</ul>
+		</li>
+	</ul>
+
+</div>
+
+<div id="footer">
+	<div><a href="../../../../../../ja/sitemap.html">SiteMap</a> <a href="http://d.hatena.ne.jp/jflute">Author's Blog</a><a href="https://www.seasar.org/issues/browse/DBFLUTE">BTS</a></div>
+	<ul class="footer-navi">
+		<li class="hd-introduction"><a href="../../../../../../ja/introduction/index.html">Introduction</a></li>
+		<li class="hd-tutorial"><a href="../../../../../../ja/tutorial/index.html">Tutorial</a>
+			<ul>
+				<li class="hd-architect"><a href="../../../../../../ja/tutorial/architect.html">for Architect</a></li>
+				<li class="hd-developer"><a href="../../../../../../ja/tutorial/developer.html">for Developer</a></li>
+			</ul>
+		</li>
+		<li class="hd-environment"><a href="../../../../../../ja/environment/index.html">Environment</a>
+			<ul>
+				<li class="hd-install"><a href="../../../../../../ja/environment/setup/index.html">Setup</a></li>
+				<li class="hd-upgrade"><a href="../../../../../../ja/environment/upgrade/index.html">Upgrade</a></li>
+			</ul>
+		</li>
+		<li class="hd-manual"><a href="../../../../../../ja/manual/index.html">Manual</a></li>
+	</ul>
+
+</div>
+
+</div>
+</body>
+</html>

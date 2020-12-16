@@ -1,0 +1,333 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja" lang="ja" >
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<meta http-equiv="Content-Style-Type" content="text/css" />
+	<meta name="keywords" content="DBFlute,Behavior,queryUpdate,CBによる更新,ConditionBeanで更新,ConditionBeanでupdate,条件更新,子テーブル削除" />
+	<link rel="stylesheet" type="text/css" href="../../../../../../css/sub.css" />
+	<!--[if IE 6.0]>
+		<link rel="stylesheet" type="text/css" href="../../../../../../css/cb/sub.css" />
+	<![endif]--> 
+	<title>queryUpdate(entity, cb) | DBFlute</title>
+</head>
+<body>
+<div id="container" class="ct-manual">
+
+<div id="mainbar">
+<div id="header">
+	<div class="navi-upper"><a href="../../../../../../ja/sitemap.html">SiteMap</a>|<a href="http://d.hatena.ne.jp/jflute/">Author's Blog</a></div>
+	<div class="navi-main">
+	<ul>
+		<li class="hd-introduction"><a href="../../../../../../ja/introduction/index.html"><img src="../../../../../../image/parts/navi/link-intro.png" alt="Introduction" width="75" height="32" /></a></li>
+		<li class="hd-tutorial"><a href="../../../../../../ja/tutorial/index.html"><img src="../../../../../../image/parts/navi/link-tuto.png" alt="Tutorial" width="56" height="24" /></a>
+			<ul>
+				<li class="hd-architect"><a href="../../../../../../ja/tutorial/architect.html"><img src="../../../../../../image/parts/navi/link-arch.png" alt="for Architect" width="80" height="24" /></a></li>
+				<li class="hd-developer"><a href="../../../../../../ja/tutorial/developer.html"><img src="../../../../../../image/parts/navi/link-dev.png" alt="for Developer" width="87" height="24" /></a></li>
+			</ul>
+		</li>
+		<li class="hd-environment"><a href="../../../../../../ja/environment/index.html"><img src="../../../../../../image/parts/navi/link-env.png" alt="Environment" width="84" height="25" /></a>
+			<ul>
+				<li class="hd-install"><a href="../../../../../../ja/environment/setup/index.html"><img src="../../../../../../image/parts/navi/link-setup.png" alt="Setup" width="42" height="24" /></a></li>
+				<li class="hd-upgrade"><a href="../../../../../../ja/environment/upgrade/index.html"><img src="../../../../../../image/parts/navi/link-upgrade.png" alt="Upgrade" width="61" height="25" /></a></li>
+			</ul>
+		</li>
+		<li class="hd-manual"><a href="../../../../../../ja/manual/index.html"><img src="../../../../../../image/parts/navi/link-manual.png" alt="Manual" width="62" height="25" /></a></li>
+	</ul>
+	</div>
+</div>
+
+<div id="content">
+	<h1>queryUpdate(entity, cb)</h1>
+	<ul class="indexlist">
+		<li><a href="#overview">概要</a>
+			<ul>
+				<li><a href="#basicconcept">基本概念</a></li>
+			</ul>
+		</li>
+		<li><a href="#howto">実装方法</a>
+			<ul>
+				<li><a href="#implflow">実装の流れ <span class="frm">※1.1.x (Java8版)</span></a></li>
+				<li><a href="#implflow10x">実装の流れ <span class="frm">※1.0.x (Java6版)</span></a></li>
+				<li><a href="#pkupdate">主キー値の更新</a></li>
+			</ul>
+		</li>
+		<li><a href="#methodspec">メソッド仕様</a>
+			<ul>
+				<li><a href="#argument">引数</a></li>
+				<li><a href="#result">戻り値</a></li>
+				<li><a href="#exception">例外</a></li>
+				<li><a href="#dbmsheadache">DBMSによっては制限も</a></li>
+				<li><a href="#compoundpk">複合主キーの場合は制限</a></li>
+			</ul>
+		</li>
+		<li><a href="#commoncolumn">共通カラムの自動設定</a></li>
+		<li><a href="#exclusive">排他制御処理なし</a></li>
+		<li><a href="#nocascade">カスケードはしません</a></li>
+		<li><a href="#scope">Entity更新のスコープ</a></li>
+		<li><a href="#nonquery">条件なしでの更新(全件更新)</a></li>
+	</ul>
+
+	<h2 id="overview">概要</h2>
+	<h3 id="basicconcept">基本概念</h3>
+	<p>
+		ConditionBean の絞り込み条件に一致するレコード全てを更新します。
+	</p>
+	<p>
+		例えば、"未払い購入のある正式会員を仮会員に更新"、"退会会員の生年月日を null に更新"
+		というような更新ができます。Entity に加えて、ConditionBean を指定します。
+	</p>
+	<p>
+		共通カラムの自動設定はされます。排他制御カラムの更新はありますが、排他制御処理はありません。
+	</p>
+	<div class="relatedpage"><a href="#commoncolumn">this - 共通カラムの自動設定</a></div>
+	<div class="relatedpage"><a href="#exclusive">this - 排他制御処理なし</a></div>
+	<p>
+		条件なしでの更新(NonQueryUpdate)は、デフォルトでは許可されません<span class="frm">(@since 0.9.7.8)</span>。
+	</p>
+	<div class="relatedpage"><a href="#nonquery">this - 条件なしでの更新(全件更新)</a></div>
+	<p>
+		会話上では、<em class="keyword">くえりあっぷでーと</em>
+		と表現します。<em class="keyword">ConditionBean のあっぷでーと</em> とも言えます。
+	</p>
+
+	<h2 id="howto">実装方法</h2>
+	<h3 id="implflow">実装の流れ <span class="frm">※1.1.x (Java8版)</span></h3>
+	<p>
+		Behaviorの <em class="keyword">queryUpdate()</em>
+		を呼び出し、Entity と ConditionBean を指定します。
+	</p>
+	<div class="relatedpage"><a href="../../../../../tutorial/onjava8.html">DBFlute on Java8</a></div>
+<pre><span class="codetitle">e.g. queryUpdate()の実装手順 (Eclipseでコード補完) {MEMBER} @Java</span><code>
+<span class="attribute">memberBhv</span>.quU <span class="comment">// .quU と打って enter</span>
+--
+
+<span class="comment">// メソッドが補完されて、第一引数の "member" が選択状態に</span>
+<span class="comment">// tabで移動して、第二引数の "cbLambda" を選択状態にして...</span>
+<span class="attribute">memberBhv</span>.<span class="point">queryUpdate</span>(member, cbLambda)
+--
+
+<span class="comment">// cbLambdaの部分で、_ll (補完テンプレートが有効なら)</span>
+<span class="attribute">memberBhv</span>.<span class="point">queryUpdate</span>(member, <span class="subpoint">_ll</span>)
+--
+
+<span class="comment">// Lambda引数名はcbにして...セミコロン ";" を忘れずに</span>
+<span class="attribute">memberBhv</span>.<span class="point">queryUpdate</span>(member, cb -&gt; {
+    <span class="localvar">cb</span>.query().set<span class="abbreviation">...</span> <span class="comment">// tabでカーソル移動してcbで検索条件</span>
+});
+--
+</code></pre>
+	<p>
+		Entity には PK の値も不要です。更新値だけを設定します。
+	</p>
+<pre><span class="codetitle">e.g. 未払い購入のある正式会員を仮会員に更新 @Java</span><code>
+Member member = <span class="keyword">new</span> Member();
+member.<span class="point">setMemberStatusCode_Provisional()</span>;
+member.<span class="point">setFormalizedDatetime</span>(<span class="keyword">null</span>);
+<span class="attribute">memberBhv</span>.queryUpdate(member, cb -&gt; {
+    cb.query().<span class="point">setMemberStatusCode_Equal_Formalized()</span>;
+    cb.query().existsPurchase(puchaseCB -&gt; {
+        puchaseCB.query().<span class="point">setPaymentCompeleteFlg_Equal_False()</span>;
+    });
+});
+</code></pre>
+<pre><span class="codetitle">e.g. 未払い購入のある正式会員を仮会員に更新 @DisplaySql</span><code>
+<span class="keyword">update</span> MEMBER
+   <span class="keyword">set</span> <span class="point">MEMBER_STATUS_CODE</span> = <span class="literal">'PRV'</span>
+     , <span class="point">FORMALIZED_DATETIME</span> = <span class="keyword">null</span>
+     , UPDATE_DATETIME = <span class="literal">'2010-11-16 15:54:48.624'</span>
+     , UPDATE_USER = <span class="literal">'testUser'</span>
+     , UPDATE_PROCESS = <span class="literal">'WxBhvQueryUpdateTest[main]'</span>
+     , VERSION_NO = VERSION_NO + <span class="literal">1</span>
+ <span class="keyword">where</span> MEMBER_ID <span class="keyword">in</span> (
+<span class="keyword">select</span> dfloc.MEMBER_ID 
+  <span class="keyword">from</span> MEMBER dfloc 
+ <span class="keyword">where</span> dfloc.<span class="point">MEMBER_STATUS_CODE</span> = <span class="literal">'FML'</span>
+   <span class="keyword">and exists</span> (<span class="keyword">select</span> sub1loc.MEMBER_ID
+                 <span class="keyword">from</span> PURCHASE sub1loc 
+                <span class="keyword">where</span> sub1loc.MEMBER_ID = dfloc.MEMBER_ID
+                  <span class="keyword">and</span> sub1loc.<span class="point">PAYMENT_COMPLETE_FLG</span> = <span class="literal">0</span>
+       )
+)
+</code></pre>
+	<p>
+		絞り込み条件は、(基本的には) InScope を使ったサブクエリ方式です。
+	</p>
+	<div class="relatedpage"><a href="#dbmsheadache">DBMSによっては制限も</a></div>
+	<div class="relatedpage"><a href="#compoundpk">複合主キーの場合は制限</a></div>
+	<h3 id="implflow10x">実装の流れ <span class="frm">※1.0.x (Java6版)</span></h3>
+<pre><span class="codetitle">e.g. queryUpdate()の実装手順 (Eclipseでコード補完) {MEMBER} @Java</span><code>
+<span class="attribute">memberBhv</span>.quU <span class="comment">// .quU と打って enter</span>
+--
+<span class="attribute">memberBhv</span>.<span class="point">queryUpdate</span>(member, cb);
+
+<span class="comment">// .qu と打つと queryUpdate() や queryDelete() など</span>
+<span class="comment">// クエリ更新系のメソッドだけが補完候補に列挙される</span>
+</code></pre>
+	<h3 id="pkupdate">主キー値の更新</h3>
+	<p>
+		PK も更新対象カラムの一つです。あまりお奨めされませんが、PKのプロパティに値を設定すれば更新できます。
+	</p>
+
+	<h2 id="methodspec">メソッド仕様</h2>
+	<h3 id="argument">引数</h3>
+	<p>
+		該当のBehaviorに対応するテーブルの Entity と ConditionBean <span class="frm">(1.1.xよりコールバック)</span> になります。
+	</p>
+	<p>
+		nullを指定した場合は例外発生します。
+	</p>
+	<h3 id="result">戻り値</h3>
+	<p>
+		更新したレコードの件数が戻ります。更新対象が存在しなかった場合は 0 が戻ります。
+	</p>
+	<h3 id="exception">例外</h3>
+	<dl class="textlist">
+		<dt>一意制約違反があった場合</dt>
+		<dd>org.seasar.dbflute.exception.EntityAlreadyExistsException</dd>
+		<dd>
+			DBFluteで正式サポートしていない DBMS では、別の例外(SQLFailureException)の可能性があります。
+			<div class="relatedpage"><a href="../../../../../environment/supported.html#database">DBFluteのサポート情報 - データベース</a></div>
+		</dd>
+		<dt>条件なし更新(全件更新)の場合</dt>
+		<dd>org.seasar.dbflute.exception.NonQueryUpdateNotAllowedException</dd>
+	</dl>
+	<h3 id="dbmsheadache">DBMSによっては制限も</h3>
+	<p>
+		DBMSによっては利用できる機能に制限があります。例えば、MySQLは、update 文の where
+		句のサブクエリにて更新対象のテーブルを参照できない、という制約があるため、サブクエリ方式ではなく、where
+		句に直接条件を展開しています。すると、Query(Relation) や ExistsReferrer
+		などの関連テーブルを利用した絞り込み条件が利用できなくなります。
+	</p>
+	<div class="relatedpage"><a href="../../../../reference/dbway/mysql/index.html#queryupdate">MySQL - QueryUpdate/Deleteの実現</a></div>
+	<h3 id="compoundpk">複合主キーの場合は制限</h3>
+	<p>
+		複合主キーの場合は制限は、サブクエリ方式が利用できないため、MySQLと同じ制限になります。
+	</p>
+	<div class="relatedpage"><a href="../../../../reference/dbway/mysql/index.html#queryupdate">MySQL - QueryUpdate/Deleteの実現</a></div>
+	<div class="relatedpage"><a href="../../../../function/genbafit/deprecatedfit/compoundprimarykey/index.html">現場フィット - 複合主キーの対策</a></div>
+
+	<h2 id="commoncolumn">共通カラムの自動設定</h2>
+	<p>
+		update(entity) と同じ仕様です。
+	</p>
+	<div class="detailpage"><a href="./update.html#commoncolumn">update(entity) - 共通カラムの自動設定</a></div>
+
+	<h2 id="exclusive">排他制御処理なし</h2>
+	<p>
+		排他制御カラムは更新(バージョン番号のインクリメントなど)されますが、排他制御処理はありません。
+	</p>
+
+	<h2 id="nocascade">カスケードはしません</h2>
+	<p>
+		update(entity) と同じ仕様です。
+	</p>
+	<div class="detailpage"><a href="./update.html#nocascade">update(entity) - カスケードはしません</a></div>
+
+	<h2 id="scope">Entity更新のスコープ</h2>
+	<p>
+		update(entity) と同じ仕様です。
+	</p>
+	<div class="detailpage"><a href="./update.html#scope">update(entity) - Entity更新のスコープ</a></div>
+
+	<h2 id="nonquery">条件なしでの更新(全件更新)</h2>
+	<p>
+		条件なしでの更新(NonQueryUpdate)は、デフォルトでは許可されません<span class="frm">(@since 0.9.7.8)</span>。
+		(万が一の)不意の全件更新を防ぐためです。どうしても全件更新をしたい場合は、varyingQueryUpdate()
+		を利用し、UpdateOption で許可するオプションを指定することで実現できます。
+	</p>
+	<div class="relatedpage"><span class="working"><!-- <a href="./varyingqueryupdate.html"> -->varyingQueryUpdate(entity, cb, option)<!-- </a> --></span></div>
+
+</div>
+</div>
+
+<div id="sidebar">
+	<div class="logo"><a href="../../../../../../"><img src="../../../../../../image/parts/logo.png" alt="dbflute-logo" width="240" height="110" /></a></div>
+<ul>
+		<li><a href="../../../../../../ja/manual/function/generator/index.html">自動生成ツール</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/generator/client/index.html">DBFluteクライアント</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/engine/index.html">DBFluteエンジン</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/index.html">DBFluteタスク</a>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/generator/task/generate/index.html">Generate</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/sql2entity/index.html">Sql2Entity</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/generator/task/replaceschema/index.html">ReplaceSchema</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/manage/index.html">Manage</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/doc/schemahtml.html">SchemaHTML</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/function/ormapper/index.html">O/Rマッパ</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/ormapper/behavior/index.html">Behavior</a></li>
+				<li><a href="../../../../../../ja/manual/function/ormapper/conditionbean/index.html">ConditionBean</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/ormapper/outsidesql/index.html">OutsideSql</a></li>
+				<li><a href="../../../../../../ja/manual/function/ormapper/entity/index.html">Entity</a></li>
+				<li><a href="../../../../../../ja/manual/function/ormapper/runtime/index.html">DBFluteランタイム</a></li>
+			</ul>
+		</li>
+		<li>
+			<a href="../../../../../../ja/manual/function/genbafit/index.html">現場フィット</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/genbafit/implfit/index.html">アプリ実装の全体最適</a></li>
+				<li><a href="../../../../../../ja/manual/function/genbafit/projectfit/index.html">プロジェクト構成対応</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/genbafit/runtimefit/index.html">実行時共通要件の実現</a></li>
+				<li><a href="../../../../../../ja/manual/function/genbafit/deprecatedfit/index.html">非推奨な構造フォロー</a></li>
+				<li><a href="../../../../../../ja/manual/function/genbafit/dbflutefit/index.html">DBFluteサポート</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/function/helper/index.html">支援ツール</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/generator/intro/index.html">DBFlute Intro</a></li>
+				<li><a href="../../../../../../ja/manual/function/helper/emecha/index.html">EMecha (Eclipse Plugin)</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/helper/maven/index.html">Maven DBFlute Plugin</a></li>
+				<li><a href="../../../../../../ja/manual/function/helper/saflute/index.html">SAFlute</a></li>
+				<li><a href="../../../../../../ja/manual/function/helper/utflute/index.html">UTFlute</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/reference/index.html">リファレンス</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/reference/dbway/index.html">DBMSごとの取扱い</a></li>
+				<li><a href="../../../../../../ja/manual/reference/diway/index.html">DIコンテナごとの取扱い</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/reference/dfprop/index.html">DBFluteプロパティ</a></li>
+				<li><a href="../../../../../../ja/manual/reference/dictionary/index.html">DBFlute用語集</a></li>
+				<li><a href="../../../../../../ja/manual/reference/example/index.html">DBFlute Example</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/reference/faq/index.html">FAQ</a></li>
+				<li><a href="../../../../../../ja/manual/reference/troubleshooting/index.html">トラブルシューティング</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/topic/index.html">トピック</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/topic/dbdesign/index.html">DB設計</a></li>
+				<li><a href="../../../../../../ja/manual/topic/programming/index.html">プログラミング</a></li>
+				<li><a href="../../../../../../ja/manual/topic/friends/index.html">他のフレームワーク</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/topic/office/index.html">事務的な話</a></li>
+				<li><a href="../../../../../../ja/manual/topic/dbflutenet/index.html">DBFlute.NET</a></li>
+			</ul>
+		</li>
+	</ul>
+
+</div>
+
+<div id="footer">
+	<div><a href="../../../../../../ja/sitemap.html">SiteMap</a> <a href="http://d.hatena.ne.jp/jflute">Author's Blog</a><a href="https://www.seasar.org/issues/browse/DBFLUTE">BTS</a></div>
+	<ul class="footer-navi">
+		<li class="hd-introduction"><a href="../../../../../../ja/introduction/index.html">Introduction</a></li>
+		<li class="hd-tutorial"><a href="../../../../../../ja/tutorial/index.html">Tutorial</a>
+			<ul>
+				<li class="hd-architect"><a href="../../../../../../ja/tutorial/architect.html">for Architect</a></li>
+				<li class="hd-developer"><a href="../../../../../../ja/tutorial/developer.html">for Developer</a></li>
+			</ul>
+		</li>
+		<li class="hd-environment"><a href="../../../../../../ja/environment/index.html">Environment</a>
+			<ul>
+				<li class="hd-install"><a href="../../../../../../ja/environment/setup/index.html">Setup</a></li>
+				<li class="hd-upgrade"><a href="../../../../../../ja/environment/upgrade/index.html">Upgrade</a></li>
+			</ul>
+		</li>
+		<li class="hd-manual"><a href="../../../../../../ja/manual/index.html">Manual</a></li>
+	</ul>
+
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,756 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja" lang="ja" >
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<meta http-equiv="Content-Style-Type" content="text/css" />
+	<meta name="keywords" content="DBFlute,タスク,Task,ReplaceSchema,alter,本番環境,本番サーバ,リリース後のDB変更,alter文の自動生成" />
+	<link rel="stylesheet" type="text/css" href="../../../../../../css/sub.css" />
+	<!--[if IE 6.0]>
+		<link rel="stylesheet" type="text/css" href="../../../../../../css/cb/sub.css" />
+	<![endif]--> 
+	<title>AlterCheck | DBFlute</title>
+</head>
+<body>
+<div id="container" class="ct-manual">
+
+<div id="mainbar">
+<div id="header">
+	<div class="navi-upper"><a href="../../../../../../ja/sitemap.html">SiteMap</a>|<a href="http://d.hatena.ne.jp/jflute/">Author's Blog</a></div>
+	<div class="navi-main">
+	<ul>
+		<li class="hd-introduction"><a href="../../../../../../ja/introduction/index.html"><img src="../../../../../../image/parts/navi/link-intro.png" alt="Introduction" width="75" height="32" /></a></li>
+		<li class="hd-tutorial"><a href="../../../../../../ja/tutorial/index.html"><img src="../../../../../../image/parts/navi/link-tuto.png" alt="Tutorial" width="56" height="24" /></a>
+			<ul>
+				<li class="hd-architect"><a href="../../../../../../ja/tutorial/architect.html"><img src="../../../../../../image/parts/navi/link-arch.png" alt="for Architect" width="80" height="24" /></a></li>
+				<li class="hd-developer"><a href="../../../../../../ja/tutorial/developer.html"><img src="../../../../../../image/parts/navi/link-dev.png" alt="for Developer" width="87" height="24" /></a></li>
+			</ul>
+		</li>
+		<li class="hd-environment"><a href="../../../../../../ja/environment/index.html"><img src="../../../../../../image/parts/navi/link-env.png" alt="Environment" width="84" height="25" /></a>
+			<ul>
+				<li class="hd-install"><a href="../../../../../../ja/environment/setup/index.html"><img src="../../../../../../image/parts/navi/link-setup.png" alt="Setup" width="42" height="24" /></a></li>
+				<li class="hd-upgrade"><a href="../../../../../../ja/environment/upgrade/index.html"><img src="../../../../../../image/parts/navi/link-upgrade.png" alt="Upgrade" width="61" height="25" /></a></li>
+			</ul>
+		</li>
+		<li class="hd-manual"><a href="../../../../../../ja/manual/index.html"><img src="../../../../../../image/parts/navi/link-manual.png" alt="Manual" width="62" height="25" /></a></li>
+	</ul>
+	</div>
+</div>
+
+<div id="content">
+	<h1>AlterCheck</h1>
+	<p>
+		Alto DBFlute のパートです。
+	</p>
+	<div class="relatedpage"><a href="../../../../../introduction/altodbflute.html">Alto DBFlute</a></div>
+	<div class="relatedpage"><a href="./livingdbmigration.html">LivingDBMigration</a></div>
+	<div class="relatedpage"><a href="../../intro/alterbyintro.html">AlterCheck を Intro で</a></div>
+	<ul class="indexlist">
+		<li><a href="#concept">AlterCheckのコンセプト</a>
+			<ul>
+				<li><a href="#checklogic">検証のロジック</a></li>
+				<li><a href="#worddef">言葉の定義</a></li>
+			</ul>
+		</li>
+		<li><a href="#overview">AlterCheckの機能概要</a>
+			<ul>
+				<li><a href="#twotask">二つのDBFluteタスク</a></li>
+				<li><a href="#checkflow">チェックの流れ</a></li>
+				<li><a href="#dirstructure">AlterCheckで使うディレクトリたち</a></li>
+				<li><a href="#conceptimage">AlterCheck概念図</a></li>
+			</ul>
+		</li>
+		<li><a href="#saveprevious">リリース直後に SavePrevious</a>
+			<ul>
+				<li><a href="#howtosaveprevious">SavePreviousの実行の仕方</a></li>
+				<li><a href="#previouszip">PreviousDDLがZIPで保存される</a></li>
+				<li><a href="#finishedalter">前のスプリントのAlterDDLをfinish</a></li>
+			</ul>
+		</li>
+		<li><a href="#altercheck">DB変更したら AlterCheck</a>
+			<ul>
+				<li><a href="#useintro">AlterCheckやるならIntro推奨</a></li>
+				<li><a href="#updatenextddl">(0. DB変更でNextDDLを更新)</a></li>
+				<li><a href="#warmingup">1. いきなりAlterCheckでウォーミングアップ</a></li>
+				<li><a href="#firstdiff">2. チェック結果HTMLで差分の確認 <span class="frm">(schemaディレクトリ)</span></a></li>
+				<li><a href="#restorealter">3. 自動配置されたSQLファイルの確認 <span class="frm">(alterディレクトリ)</span></a></li>
+				<li><a href="#makealterfile">4. SQLファイルの粒度の調整 <span class="frm">(alterディレクトリ)</span></a></li>
+				<li><a href="#writeandcheck">5. さあ、alter文を書いてチェック <span class="frm">(alterディレクトリ)</span></a></li>
+				<li><a href="#whennodiff">6. 差分がなくなったら成功 <span class="frm">(historyディレクトリ)</span></a></li>
+				<li><a href="#recheck">(7. チェック成功後にAlterDDLを修正するなら)</a></li>
+				<li><a href="#aftercheck">(8. 正常終了後のDBの状態)</a></li>
+			</ul>
+		</li>
+		<li><a href="#ngseries">そもそもDDLがNGだったら</a>
+			<ul>
+				<li><a href="#previousng">PreviousNGマーク</a></li>
+				<li><a href="#alterng">AlterNGマーク</a></li>
+				<li><a href="#nextng">NextNGマーク</a></li>
+				<li><a href="#aboutngmark">NGマークは NG の強調</a></li>
+			</ul>
+		</li>
+		<li><a href="#outsidescript">AlterDDL で外部スクリプト</a></li>
+		<li><a href="#miscinfo">AlterCheckの雑多な補足</a>
+			<ul>
+				<li><a href="#nowok">そもそもいま本番とズレてない？</a></li>
+				<li><a href="#alterbeta">あえて AlterDDL はベタに</a></li>
+				<li><a href="#ddldiff">DDLのDIFFにも利用できる</a></li>
+			</ul>
+		</li>
+	</ul>
+
+	<h2 id="concept">AlterCheckのコンセプト</h2>
+	<h3 id="checklogic">検証のロジック</h3>
+	<p>
+		差分DDLを検証する仕組みがあります<span class="frm">(@since 0.9.8.4)</span>。
+		<em class="keyword">AlterCheck</em> と呼ばれるこの仕組みを利用してフルDDLと差分DDLをしっかりと整合性をとって運用していくことが推奨されます。
+	</p>
+	<div class="relatedpage"><a href="./livingdbmigration.html">LivingDBMigration</a></div>
+	<p>
+		<em class="keyword">前のDB(PreviousDDL) + 差分DDL(AlterDDL) = 最新のフルDDL(NextDDL)</em>
+	</p>
+	<p>
+		前のDBに差分DDLを加えたものと、最新のフルDDLの実行結果は同じはずです。ReplaceSchema
+		で双方の状態を作り出して差分をチェックします。<span class="frm">(ReplaceSchema運用していることが前提)</span>
+	</p>
+	<h3 id="worddef">言葉の定義</h3>
+	<p>
+		例えば、二週間ごとに開発とリリースを繰り返す <em class="mark">インクリメンタル開発</em> として、その一つの <em class="mark">スプリント</em> の中で複数のDB変更が発生することを想定して説明をしていきます。
+	</p>
+	<dl class="shortkeymainlist">
+		<dt>PreviousDDL</dt>
+		<dd>ひとつ前のスプリントのリリース直後の本番DBを再現できるフルDDL <span class="frm">(+ データ)</span></dd>
+		<dt>AlterDDL</dt>
+		<dd>いまのスプリントのDB変更を実現する差分DDL <span class="frm">(+ スクリプト)</span></dd>
+		<dt>NextDDL</dt>
+		<dd>いまのスプリントの最新のスキーマを再現できるフルDDL <span class="frm">(+ データ)</span></dd>
+	</dl>
+	<p>
+		"フルDDL" は、ERDツールなどから自動生成される create table 文が主体のもので、ReplaceSchema で実行されることを想定しています。
+		"差分DDL" は、人が手動で作成するもので、リリース時に本番DBに実行されることを想定しています。
+	</p>
+
+	<h2 id="overview">AlterCheckの機能概要</h2>
+	<h3 id="twotask">二つのDBFluteタスク</h3>
+	<p>
+		DB変更のために二つのDBFluteタスクが用意されています。
+	</p>
+	<dl class="shortkeymainlist">
+		<dt>SavePrevious</dt><dd>PreviousDDLを保存、前回リリース直後に実施、スプリント内で一回だけ</dd>
+		<dt>AlterCheck</dt><dd>AlterDDLをチェック、DB変更のたびに実施、スプリント内で複数回あり得る</dd>
+	</dl>
+	<p>
+		SavePreviousを実行する人と、AlterCheckを実行する人が同じ人とは限りません<span class="frm">(実行するタイミングが全然違う)</span>。
+		また、複数のAlterCheckも同じ人とは限りません。それぞれ独立した作業となります。
+	</p>
+	<h3 id="checkflow">チェックの流れ</h3>
+	<p>
+		ひとつのスプリントの中で "3回" DB変更があるとした場合、おおまかな流れはこのようになります。
+	</p>
+	<ol>
+		<li>リリース作業: 前回スプリントのDB変更を本番DBに反映</li>
+		<li>PreviousDDLを保存: <em class="mark">SavePrevious</em></li>
+		<li><span class="frm">(...通常の開発)</span></li>
+		<li>DB変更作業: ERDの修正などでNextDDLを更新</li>
+		<li>AlterDDLをチェック: <em class="mark">AlterCheck</em></li>
+		<li><span class="frm">(...通常の開発)</span></li>
+		<li>DB変更作業: ERDの修正などでNextDDLを更新</li>
+		<li>AlterDDLをチェック: <em class="mark">AlterCheck</em></li>
+		<li><span class="frm">(...通常の開発)</span></li>
+		<li>DB変更作業: ERDの修正などでNextDDLを更新</li>
+		<li>AlterDDLをチェック: <em class="mark">AlterCheck</em></li>
+		<li><span class="frm">(...通常の開発)</span></li>
+		<li>リリース作業: チェック済みAlterDDLを本番DBに反映</li>
+		<li>PreviousDDLを保存: <em class="mark">SavePrevious</em> <span class="frm">(以降、繰り返し)</span></li>
+	</ol>
+	<h3 id="dirstructure">AlterCheckで使うディレクトリたち</h3>
+	<p>
+		ざっくり頭に入れておきましょう。
+	</p>
+<pre><span class="codetitle">e.g. AlterCheckのディレクトリ構造の全体ざっくり @Directory</span><code>
+dbflute_maihamadb
+ |-playsql
+    |-data <span class="comment">// ReplaceSchemaの登録データのディレクトリ</span>
+    |
+    |-migration <span class="comment">// AlterCheck用のディレクトリのトップ</span>
+    |  |
+    |  |-<span class="point">alter</span>  <span class="comment">// AlterDDLを書くディレクトリ (一時作業領域なのでgitignore推奨)</span>
+    |  |  |-<span class="subpoint">alter-schema.sql</span>
+    |  |  |-<span class="subpoint">alter-schema-[チケット番号].sql</span>
+    |  |
+    |  |-history <span class="comment">// AlterCheckのSQLファイルの履歴ディレクトリ</span>
+    |  |  |-[日付]
+    |  |  |  |-[日時]
+    |  |  |  |  | <span class="comment">// 本番DBにリリース済みのAlterDDL</span>
+    |  |  |  |  |-finished-alter...zip <span class="comment">// (用済みなのでgitignoreでもOK)</span>
+    |  |  |  |
+    |  |  |  |-[日時]
+    |  |  |     | <span class="comment">// 未リリースでチェック済みのAlterDDL @until DBFlute-1.2.0</span>
+    |  |  |     |-checked-alter...zip
+    |  |  |
+    |  |  | <span class="comment">// 未リリースでチェック済みのAlterDDL @since DBFlute-1.2.1</span>
+    |  |  |-<span class="point">unreleased-checked-alter</span>
+    |  |     |-DONT_EDIT_HERE.dfmark
+    |  |     |-for-previous-20120804-1746.dfmark
+    |  |     |-<span class="subpoint">READONLY_alter-schema.sql</span>
+    |  |     |-<span class="subpoint">READONLY_alter-schema-[チケット番号].sql</span>
+    |  |
+    |  |-previous <span class="comment">// SavePrevious用のディレクトリ</span>
+    |  |  |-previous-20120804-1746.zip <span class="comment">// 前のDBを再現するPreviousDDL</span>
+    |  |
+    |  |-schema <span class="comment">// 様々なスキーマ情報のディレクトリ</span>
+    |  |  |-alter-check-result.html <span class="comment">// チェック結果が記載されているHTML</span>
+</code></pre>
+	<p>
+		AlterCheckを実施する人が意識するのは、<em class="mark">alter</em> と <em class="mark">schema</em> です。
+		チェックされた AlterDDL を本番に反映する人が意識するのは、<em class="mark">unreleased-checked-alter</em> です。
+	</p>
+	<p>
+		gitignoreの補足がないものは、基本的にバージョン管理(gitなど)のコミット対象にした方が良いものです。
+		<span class="frm">(中にはコミットの必要ないものも幾つかありますが、一時的に作成されてコミット時にはすでに削除されるものなので、気にしなくても良いでしょう)</span>
+	</p>
+	<h3 id="conceptimage">AlterCheck概念図</h3>
+	<p class="imgbox">図 : AlterCheck概念図
+		<a href="../../../../../data/model/reps-AlterCheck-view.png" title="AlterCheck概念図"><img src="../../../../../data/model/reps-AlterCheck-view.png" alt="AlterCheck概念図" width="550" height="390" /></a>
+	</p>
+
+	<h2 id="saveprevious">リリース直後に SavePrevious</h2>
+	<p>
+		<em class="keyword">ひとつのスプリントで一回だけ！</em>
+	</p>
+	<p>
+		DB変更する前(前回リリース直後)に、DB変更前のDBを復元できる DDL
+		やデータをまるごと保存します。これが(リリースするまでは)本番DBと同じ構造を表現する PreviousDDL となります。
+	</p>
+	<h3 id="howtosaveprevious">SavePreviousの実行の仕方</h3>
+	<p>
+		Manageタスクで、<em class="keyword">SavePrevious</em> を指定して実行します<span class="frm">(@since 0.9.9.7B)</span>。
+	</p>
+	<div class="relatedpage"><a href="../manage/index.html">Manageタスク</a></div>
+<pre><span class="codetitle">e.g. Manageタスクで SavePrevious の実行 (シェル) @Command</span><code>
+<span class="abbreviation">...</span>$ <span class="keyword">sh</span> manage.sh <span class="point">save-previous</span>
+
+ or
+
+<span class="abbreviation">...</span>$ <span class="keyword">sh</span> manage.sh   <span class="comment">// Enter, and then select the number</span>
+</code></pre>
+	<h3 id="previouszip">PreviousDDLがZIPで保存される</h3>
+	<p>
+		すると、playsql 直下の DDL やデータがまるごと playsql/migration/previous
+		配下にコピー保存されます。さらに、妥当性をチェックするために内部的に ReplaceSchema が実行されます。正常に終了した場合は、migration
+		配下に previous-OK.dfmark (単に OK を強調するマーク) が作成されます。
+	</p>
+<pre><span class="codetitle">e.g. PreviousDDL が正常に保存された場合 @playsql</span><code>
+dbflute_maihamadb
+ |-playsql
+    |-data
+    |-migration
+    |  |-previous
+    |  |  |-<span class="point">previous-20120804-1746.zip</span> <span class="comment">// saved at 2012/08/04 17:46</span>
+    |  |-previous-OK.dfmark
+</code></pre>
+	<p>
+		万が一、開発前にこの課程を忘れてしまった場合でも、後でバージョン管理システムから直前のバージョンを取得して
+		SavePrevious しても AlterCheck は利用できます。
+	</p>
+	<h3 id="finishedalter">前のスプリントのAlterDDLをfinish</h3>
+	<p>
+		SavePreviousは、これからのスプリントの準備を整える役割もあります。前のスプリントのAlterDDLを回収して history の ZIP に固めます。
+	</p>
+	<dl class="textlist">
+		<dt>DBFlute-1.2.1 より</dt>
+		<dd>unreleased-checked-alter のSQLファイルを finished-alter...zip に固める</dd>
+		<dd>unreleased-checked-alter は空っぽになる <span class="frm">(その状態をgitにコミットする)</span></dd>
+		<dt>DBFlute-1.2.0 まで</dt><dd>checked-alter...zip を finished-alter...zip に変更</dd>
+	</dl>
+	<p>
+		これにより、新たなスプリントの AlterCheck を実施することができます。
+	</p>
+
+	<h2 id="altercheck">DB変更したら AlterCheck</h2>
+	<p>
+		<em class="keyword">ひとつのスプリントで何度でも</em>
+	</p>
+	<h3 id="useintro">AlterCheckやるならIntro推奨</h3>
+	<p>
+		AlterCheckをやるのであれば、<em class="mark">DBFlute Intro</em> の画面がオススメです。
+	</p>
+	<div class="detailpage"><a href="../../intro/alterbyintro.html">AlterCheck を Intro で</a></div>
+	<p>
+		ファイル名のルールやディレクトリ構造を意識せずに安全に実施することができます。
+		特別な理由がない限りは、DBFlute Intro で AlterCheck を実施しましょう。
+	</p>
+	<p>
+		※仕組みや流れを把握しておくという意味で、以下の詳しい手順にも目を通しておくと良いでしょう。
+	</p>
+	<h3 id="updatenextddl">(0. DB変更でNextDDLを更新)</h3>
+	<p>
+		NextDDLを更新する前にAlterCheckはできませんので、先にERDを修正するなどして NextDDL
+		を更新し、ReplaceSchemaで今回のDB変更が含まれた状態を作り出せるようにしましょう。
+	</p>
+	<h3 id="warmingup">1. いきなりAlterCheckでウォーミングアップ</h3>
+	<p>
+		alter文はどこに書けばいいのか!? 差分ってどんな風にみれるのか!?
+		まずは何も考えず何の準備もせず、そのままAlterCheckタスクをいきなり実行してみてみましょう。
+	</p>
+	<p>
+		Manageタスクで、<em class="keyword">AlterCheck</em> を指定して実行します<span class="frm">(@since 0.9.9.7B)</span>。
+	</p>
+	<div class="relatedpage"><a href="../manage/index.html">Manageタスク</a></div>
+<pre><span class="codetitle">e.g. Manageタスクで AlterCheck の実行 (シェル) @Command</span><code>
+<span class="abbreviation">...</span>$ sh manage.sh <span class="point">alter-check</span>
+
+ or
+
+<span class="abbreviation">...</span>$ <span class="keyword">sh</span> manage.sh   <span class="comment">// Enter, and then select the number</span>
+</code></pre>
+	<h3 id="firstdiff">2. チェック結果HTMLで差分の確認 <span class="frm">(schemaディレクトリ)</span></h3>
+	<p>
+		いまこの状態では、AlterDDLがないので PreviousDDL と NextDDL で差があるはずです。
+		AlterCheckタスクは中断され(Failure)、前のスキーマと今のスキーマの純粋なDB変更の差分が検知されます。その差分は
+		migration/schema 配下の <em class="mark">alter-check-result.html</em> に出力されます。 
+	</p>
+<pre><span class="codetitle">e.g. AlterCheck の結果 @playsql</span><code>
+dbflute_maihamadb
+ |-playsql
+    |-data
+    |-migration
+    |  |-<span class="abbreviation">...</span>
+    |  |-schema
+    |     |-<span class="point">alter-check-result.html</span>
+</code></pre>
+	<p>
+		いま自分がDB変更した想定される差分だけであることを確認しましょう。
+	</p>
+	<p>
+		<em class="keyword">PreviousDDL + AlterDDL" から "NextDDL" への差</em>
+		になります。例えば、テーブルが追加(ADD)されていたら、"AlterDDL でそのテーブルを追加(ADD)しましょう" と解釈できます。
+	</p>
+	<dl class="valuemainlist">
+		<dt>Previous</dt><dd>PreviousDDL + AlterDDL</dd>
+		<dt>Next</dt><dd>NextDDL <span class="frm">(期待値)</span></dd>
+	</dl>
+	<p>
+		差分ルールは HistoryHTML と同じです。例えば、"カラム定義順序の違い" や "同じ構造で制約名だけの変更"
+		など、基本的にアプリに影響のない微修正ものに関しては差として認識されません。<span class="frm">(一部、DBFluteプロパティでルールを変更できる)</span>
+	</p>
+	<div class="relatedpage"><a href="../doc/historyhtml.html">HistoryHTML</a></div>
+	<p>
+		また、CraftDiffを利用している場合は、その差分も AlterCheck
+		でチェックされます。例えば、区分値テーブルなどの insert 処理の書き忘れが検知されます。
+		<span class="frm">(CraftDiffのTSVファイルは、playsql/migration/schema/craftdiff 配下に出力される)</span>
+	</p>
+	<div class="relatedpage"><a href="../../../genbafit/projectfit/craftdiff/index.html">現場フィット - 手作り差分チェック (CraftDiff)</a></div>
+	<h3 id="restorealter">3. 自動配置されたSQLファイルの確認 <span class="frm">(alterディレクトリ)</span></h3>
+	<p>
+		この時点で、playsql/migration配下に <em class="mark">alter</em> というディレクトリが自動で作成され、AlterDDLを記述するための <em class="mark">alter-schema.sql</em> が自動配置されています。
+	</p>
+	<p>
+		そのファイルの中身は、同じスプリント内で最初のDB変更か？二回目のDB変更か？によって変わります。
+	</p>
+	<dl class="keymainlist">
+		<dt>スプリント内で最初のDB変更</dt><dd>alter-schema.sql は空っぽ</dd>
+		<dt>すでに別の人がDB変更</dt><dd>alter-schema.sql に別の人のDB変更のDDLが書かれている</dd>
+	</dl>
+<pre><span class="codetitle">e.g. alter の alter-schema.sql (AlterDDL) の自動配置 @playsql</span><code>
+dbflute_maihamadb
+ |-playsql
+    |-data
+    |-migration
+    |  |-<span class="point">alter</span>
+    |  |  |-<span class="subpoint">alter-schema.sql</span> <span class="comment">// 空っぽ or 別の人のDDLが書かれている</span>
+    |  |-previous
+    |  |-<span class="abbreviation">...</span>
+</code></pre>
+	<p>
+		もし、同じスプリント内ですでに別の人がDB変更をしていたら、その内容が復元されます。
+		SQLファイルは分割できるので複数ファイルが展開される可能性もあります。
+	</p>
+<pre><span class="codetitle">e.g. alter-schema-[チケット番号].sql 形式で、別の人のSQLファイルが復元された場合 @playsql</span><code>
+dbflute_maihamadb
+ |-playsql
+    |-data
+    |-migration
+    |  |-alter
+    |  |  |-<span class="subpoint">alter-schema-SEA.sql</span> <span class="comment">// 別の人のDDL, チケット番号SEA用</span>
+    |  |  |-<span class="subpoint">alter-schema-LAND.sql</span> <span class="comment">// 別の人のDDL, チケット番号LAND用</span>
+    |  |-previous
+    |  |-<span class="abbreviation">...</span>
+</code></pre>
+	<p>
+		別の人の DDL も確認した上で自分の DDL を書かないと矛盾が発生する可能性もありますので、
+		"周りはこんなDB変更してるんだぁ" というのを軽くでも把握して整合性を保つことは大切です。
+	</p>
+	<p>
+		一方で、別の人の DDL を修正するケースや、自分が前にチェックした DDL をもう一度修正するようなケースでは、その復元された DDL を修正することになります。
+	</p>
+	<h3 id="makealterfile">4. SQLファイルの粒度の調整 <span class="frm">(alterディレクトリ)</span></h3>
+	<p>
+		SQLファイルをどういう粒度で作るかは現場のルールによって違いますので確認をしましょう。
+	</p>
+	<h4>ひとつのファイルに集約パターン</h4>
+	<p>
+		自動で作成もしくは復元されている <em class="mark">alter-schema.sql</em> にそのまま追記していきましょう。 
+	</p>
+<pre><span class="codetitle">e.g. ひとつのファイルに集約パターン @playsql</span><code>
+<span class="abbreviation">...</span>
+    |-migration
+    |  |-alter
+    |  |  |-<span class="point">alter-schema.sql</span> <span class="comment">// ここに追記</span>
+    |  |-<span class="abbreviation">...</span>
+</code></pre>
+	<h4>チケットごとにのファイル分割パターン</h4>
+	<dl class="textlist">
+		<dt>空っぽの alter-schema.sql がある場合</dt>
+		<dd>そのファイルを <em class="mark">alter-schema-[チケット番号].sql</em> に変更して、そこにDDLを書きましょう。</dd>
+		<dt>別の人のSQLファイルだけが復元されている場合</dt>
+		<dd>新しいSQLファイルを手動作成して、そこにDDLを書きましょう</dd>
+	</dl>
+<pre><span class="codetitle">e.g. alter-schema-[チケット番号].sql 形式で、別の人のSQLファイルが復元された場合 @playsql</span><code>
+<span class="abbreviation">...</span>
+    |-migration
+    |  |-alter
+    |  |  |-alter-schema-SEA.sql <span class="comment">// 別の人のDDL, チケット番号SEA用</span>
+    |  |  |-alter-schema-LAND.sql <span class="comment">// 別の人のDDL, チケット番号LAND用</span>
+    |  |  |-<span class="abbreviation">...</span>
+    |  |  |-<span class="subpoint">alter-schema-PIARI.sql</span> <span class="comment">// ここに追記 (手動作成)</span>
+    |  |-<span class="abbreviation">...</span>
+</code></pre>
+	<h3 id="writeandcheck">5. さあ、alter文を書いてチェック <span class="frm">(alterディレクトリ)</span></h3>
+	<p>
+		該当のSQLファイルに、自分のDB変更分のalter文を書きましょう。
+	</p>
+	<dl class="valuemainlist">
+		<dt>エンコーディング</dt><dd>UTF-8</dd>
+		<dt>SQLのデリミタ</dt><dd>セミコロン</dd>
+		<dt>文字列リテラルの改行</dt><dd>LFで登録される</dd>
+	</dl>
+	<p>
+		DDLだけじゃなく、そのDDLを実行するために必要な insert/update/delete などの DML も書くことができます。
+		例えば、NotNull制約を付けるための update を一緒に書くことができます。
+	</p>
+	<p>
+		さて、AlterCheckタスクを再び実行してみましょう！
+	</p>
+	<p>
+		もし、記述した AlterDDL に不整合(食い違い)がある場合は、AlterCheckタスクは中断され、その差分が先ほどの
+		<em class="mark">alter-check-result.html</em> に出力されます。差分がなくなるまで AlterDDL を修正してはチェックしてを繰り返します。
+	</p>
+	<p>
+		(手動で書いている)AlterDDLが文法上のミスなどでエラーになる可能性も十分ありますので、中断された場合はログのメッセージをしっかり読みましょう。
+	</p>
+	<h3 id="whennodiff">6. 差分がなくなったら成功 <span class="frm">(historyディレクトリ)</span></h3>
+	<p>
+		差分がなくなったらAlterCheckタスクは正常終了し、その AlterDDL は妥当性のチェック済みとして
+		migration/history 配下に保存されます。alter配下から移動されるので、alterディレクトリは空っぽになります。
+	</p>
+	<h4>DBFlute-1.2.1 からは unreleased-checked-alter</h4>
+	<p>
+		チェック成功した AlterDDL のSQLファイルは、<em class="mark">migration/history/unreleased-checked-alter</em> ディレクトリに保存されています。
+		ここは本番DBへの反映を待つ場所なので、直接手動で修正をしてはいけません。
+	</p>
+<pre><span class="codetitle">e.g. AlterDDLが保存されるHistoryのunreleased-checked-alter @playsql</span><code>
+dbflute_maihamadb
+ |-playsql
+    |-data
+    |-migration
+    |  |-alter <span class="comment">// SQL files was moved to history</span>
+    |  |-history
+    |  |  |-<span class="point">unreleased-checked-alter</span>
+    |  |     |-DONT_EDIT_HERE.dfmark
+    |  |     |-for-previous-20120804-1746.dfmark
+    |  |     |-<span class="subpoint">READONLY_alter-schema.sql</span>
+    |  |     |-<span class="subpoint">READONLY_alter-schema-[チケット番号].sql</span>
+    |  |-previous
+    |  |-schema
+</code></pre>
+	<p>
+		リリースが終わって次のスプリントのSavePreviosが実行されるまでは、そのスプリントのすべてのDB変更のAlterDDLが unreleased-checked-alter
+		に保存されています。本番DBにリリース作業をする人は、このディレクトリのSQLファイルを参照します。
+	</p>
+	<h4>DBFlute-1.2.0 までは ZIPファイルにまとめられる</h4>
+	<p>
+		直近の日付/日時のディレクトリに入っている checked-alter...zip が最新の AlterDDL です。
+	</p>
+<pre><span class="codetitle">e.g. AlterDDLが保存されるHistory @playsql</span><code>
+dbflute_maihamadb
+ |-playsql
+    |-data
+    |-migration
+    |  |-alter <span class="comment">// SQL files was moved to history</span>
+    |  |-previous
+    |  |-history
+    |  |  |-201208
+    |  |     |-20120806_1023 <span class="comment">// saved at 2012/08/06 10:23</span>
+    |  |        |-<span class="point">checked-alter-to-20120804-1746.zip</span> <span class="comment">// for 2012/08/04 17:46</span>
+    |  |-schema
+</code></pre>
+	<p>
+		リリースが終わって次のスプリントのSavePreviosが実行されるまでは、そのスプリントのすべてのDB変更のAlterDDLが checked-alter の ZIP
+		に保存されています。本番DBにリリース作業をする人は、このZIPのSQLファイルを参照します。
+	</p>
+	<h3 id="recheck">(7. チェック成功後にAlterDDLを修正するなら)</h3>
+	<p>
+		"DB変更自体の手直し" のケースと、"AlterDDLのちょこっと修正" のケースで少し分かれます。
+	</p>
+	<h4>DB変更自体の手直し <span class="frm">(NextDDLもAlterDDLも修正)</span></h4>
+	<p>
+		このページの手順の "0. DB変更でNextDDLを更新" を繰り返します。
+		新しいSQLファイルを作る必要はないので、AlterCheck後に復元されたSQLファイルを修正してAlterCheckしましょう。
+	</p>
+	<p>
+		ただし、AlterCheckの差分が出ないレベルの手直し <span class="frm">(例えばDBコメントのちょい修正やFK制約名の修正など)</span>
+		は、AlterCheckを実行しても差分にならずに成功してしまい、前に書いたSQLファイルがalterディレクトリに復元されません。
+	</p>
+	<p>
+		なので、その場合は unreleased-checked-alter ディレクトリ配下のSQLファイルを手動で
+		(READONLY_のprefixを除去して) alterディレクトリにコピーして修正して AlterCheck しましょう。
+		<span class="frm">(ちなみに、DBFlute Introであれば、AlterCheck実行せずに復元されるので、このような手間は発生しません)</span>
+	</p>
+	<h4>AlterDDLのちょこっと修正 <span class="frm">(AlterDDLのみ修正)</span></h4>
+	<p>
+		DB変更自体(NextDDL)はそのままでAlterDDLの書き方やSQLコメントの修正だけのときも、unreleased-checked-alter配下のSQLファイルを手動で
+		(READONLY_のprefixを除去して) alterディレクトリにコピーして修正して AlterCheck しましょう。
+		<span class="frm">(ちなみに、DBFlute Introであれば、AlterCheck実行せずに復元されるので、このような手間は発生しません)</span>
+	</p>
+	<p>
+		差分に関係のない修正だとしても、ミスや勘違いも十分あり得ますので、unreleased-checked-alterを直接修正せずに、必ず AlterCheck のオペレーションを経由しましょう。
+		<span class="frm">(ミスや勘違いで本番DBのメンテナンスでトラブルになるよりかは、いまここで少しの手間をかけたほうが良いです)</span>
+	</p>
+	<h4>やはり DBFlute Intro で作業するのがオススメ</h4>
+	<p>
+		こういった細かいユースケースへの対応も、DBFlute Intro経由でのオペレーションの方が安全にできますので、特別な理由がない限りは DBFlute Intro を使うほうが良いでしょう。
+	</p>
+	<h3 id="aftercheck">(8. 正常終了後のDBの状態)</h3>
+	<p>
+		AlterCheck正常終了後のDBは、PreviousDB に AlterDDL を適用させたものとなっています。
+		そのままアプリを起動してテストを行えば、より本番に近い状態のテスト環境として利用できます。
+	</p>
+
+	<h2 id="ngseries">そもそもDDLがNGだったら</h2>
+	<h3 id="previousng">PreviousNGマーク</h3>
+	<p>
+		そもそも PreviousDDL が文法的に間違っていて実行時にエラーとなった場合、および、不整合があって差分が発生した場合、
+		previous-NG.dfmark が作成されます。再実行で SavePrevious が正常に終了したら自動的に削除されます。
+	</p>
+<pre><span class="codetitle">e.g. PreviousNGマーク @playsql</span><code>
+dbflute_maihamadb
+ |-playsql
+    |-data
+    |-migration
+    |  |-<span class="point">previous-NG.dfmark</span>
+</code></pre>
+	<h3 id="alterng">AlterNGマーク</h3>
+	<p>
+		そもそも AlterDDL が文法的に間違っていて実行時にエラーとなった場合、および、不整合があって差分が発生した場合、
+		migration 配下に alter-NG.dfmark というファイルが作成されます。これは単に AlterDDL
+		がダメだったよ、ということをおおげさに表現するマークファイルです。AlterCheck が成功したら自動的に削除されます。
+	</p>
+<pre><span class="codetitle">e.g. AlterNGマーク @playsql</span><code>
+dbflute_maihamadb
+ |-playsql
+    |-data
+    |-migration
+    |  |-alter
+    |  |  |-alter-schema-10-basic.sql
+    |  |  |-alter-schema-20-view.sql
+    |  |-<span class="point">alter-NG.dfmark</span>
+</code></pre>
+	<h3 id="nextng">NextNGマーク</h3>
+	<p>
+		そもそも AlterCheck 実行時の最新状態、つまり playsql 直下のDDLやデータが文法的に間違っていて実行時にエラーとなる場合、
+		migration 配下に next-NG.dfmark というファイルが作成されます。これは単に NextDDL
+		がダメだったよ、ということをおおげさに表現するマークファイルです。AlterCheck が成功したら自動的に削除されます。
+	</p>
+<pre><span class="codetitle">e.g. NextNGマーク @playsql</span><code>
+dbflute_maihamadb
+ |-playsql
+    |-data
+    |-migration
+    |  |-alter
+    |  |  |-alter-schema-10-basic.sql
+    |  |  |-alter-schema-20-view.sql
+    |  |-<span class="point">next-NG.dfmark</span>
+</code></pre>
+	<div class="inucolumn">
+		<h3 id="aboutngmark">NGマークは NG の強調</h3>
+		<p>
+			そもそもNGマークの役割についてですが、単なる NG であることの強調という意味に尽きます。
+		</p>
+		<p>
+			しっかりとコンソールや dbflute.log
+			でエラーメッセージを見てアクションを取って欲しいのですが、
+			あまりコンソールを見ずに(エラーに気付かずに)先に進んでしまうこともありえるので、おおげさにマークファイルを出力しています。
+		</p>
+	</div>
+
+	<h2 id="outsidescript">AlterDDL で外部スクリプト</h2>
+	<p>
+		AlterDDL において、SQLの実行だけでなく外部スクリプトを実行することができます。
+		DBへの差分反映は、単純なSQLで済まされない場合もあります。DBMSのコマンドを利用して特殊な操作をすることもあるでしょう。
+		そういう場合のために、外部スクリプトが実行できるようになっています。
+	</p>
+	<p>
+		AlterDDL のSQLファイルと同じディレクトリに、alter-schema で始まる拡張子が .bat もしくは .sh
+		のスクリプトファイルを配置します。SQLファイルも含めてファイル名の昇順で実行されます。
+	</p>
+<pre><span class="codetitle">e.g. AlterDDL の外部スクリプトの配置 @playsql</span><code>
+dbflute_maihamadb
+ |-playsql
+    |-data
+    |-migration
+    |  |-alter
+    |  |  |-alter-schema-10-basic.sql
+    |  |  |-alter-schema-20-view.sql
+    |  |  |-<span class="point">alter-schema-30-special.sh</span>
+</code></pre>
+	<p>
+		スクリプトの exitCode が 0 以外の場合は、スクリプト実行エラーとみなされます。
+	</p>
+	<p>
+		スクリプトのコンソールログは、固定で UTF-8
+		として取得され、DBFluteタスクのログと一緒に出力されます。なので場合によっては、ログが文字化けする可能性はありますが、処理に影響はありません。
+	</p>
+
+	<h2 id="miscinfo">AlterCheckの雑多な補足</h2>
+	<h3 id="nowok">そもそもいま本番とズレてない？</h3>
+	<p>
+		一番最初の導入したての AlterCheck のとき、そもそも現時点で本番DBと開発DBがズレてしまっていては、いくら AlterCheck
+		をしてもズレてる状態をキープし続けるだけです。SchemaSyncCheck を使ってチェックしてズレがあれば直すと良いでしょう。
+	</p>
+	<div class="detailpage"><a href="../doc/schemasynccheck.html">SchemaSyncCheck</a></div>
+	<p>
+		さて、本番DBと開発DBにズレがなくなれば、ここからが AlterCheck の活躍の場面です。
+	</p>
+	<h3 id="alterbeta">あえて AlterDDL はベタに</h3>
+	<p>
+		AlterDDL の実装方法として、SQLファイルと外部スクリプトというベタな方式に絞っているのは、本番環境への適用を考えてのことです。
+		本番環境のDBは、多くの場合開発者の手の届かないところにあります。
+		また、DBFluteを本番環境のDBが見える場所に配置して直接接続できるというようなことも少ないでしょう。
+		それはセキュリティのことを考えると当然のこととも言えます。
+	</p>
+	<p>
+		というわけで、AlterCheck の時点で DBFlute に依存した形式でチェックをしてもあまり意味がないとも言えます。
+		例えば、DB変更の一貫として必要となるデータをエクセルデータやTSVデータなどで管理して DBFlute
+		の機能で登録しても(そういった機能は実装可能ですが)、本番環境では別の方法(DBMS のコマンドなど)で追加する必要があるかもしれません。
+	</p>
+	<p>
+		そういうことから、あえて AlterDDL はベタに実装することを想定した仕様にしています。
+		ただ、この本番環境適用は、そもそも多種多様でまだまだ分析の余地のある領域でもあるため、
+		今後の分析次第ではまた違った解釈で色々なアプローチを検討していくかもしれません。<span class="frm">(2011/05/01現在)</span>
+	</p>
+	<h3 id="ddldiff">DDLのDIFFにも利用できる</h3>
+	<p>
+		AlterCheck は本来の目的とは別に、単に <em class="keyword">二つのDDLの構造の差を確かめる</em>
+		する用途にも利用できます。例えば、同じスキーマを作成する手動で作成されたDDLとツールで自動生成されたDDL、
+		これらが同じ結果をもたらすかどうか確認できます。
+	</p>
+	<h3>0.9.9.7B, 0.9.9.7A より前では...</h3>
+	<p>
+		0.9.9.7B より前のバージョンでは、Manageタスクでの実行ではなく、migraton配下に save-previous.dfmark
+		というファイル(中身は空でよい)を作成して、ReplaceSchemaタスクを実行すると SavePrevious が実行されました。
+		まあ、alter配下に AlterDDL を配置した状態でReplaceSchemaタスクを実行すると AlterCheck が実行されました。
+	</p>
+	<p>
+		AlterCheckは、ReplaceSchemaの仕組みを利用していますが、ReplaceSchemaとは目的も運用タイミングも違うので、
+		明示的に別のタスクとして独立しました。
+	</p>
+	<p>
+		また、0.9.9.7A より前のバージョンでは、ZIP形式ではなく一つ一つのファイルがそのまま保存されます。
+		新しいバージョンでも "ZIPがなければ一つ一つのファイルを探す"
+		仕様になっているので、スムーズなバージョン移行は可能です。
+	</p>
+
+</div>
+</div>
+
+<div id="sidebar">
+	<div class="logo"><a href="../../../../../../"><img src="../../../../../../image/parts/logo.png" alt="dbflute-logo" width="240" height="110" /></a></div>
+<ul>
+		<li><a href="../../../../../../ja/manual/function/generator/index.html">自動生成ツール</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/generator/client/index.html">DBFluteクライアント</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/engine/index.html">DBFluteエンジン</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/index.html">DBFluteタスク</a>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/generator/task/generate/index.html">Generate</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/sql2entity/index.html">Sql2Entity</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/generator/task/replaceschema/index.html">ReplaceSchema</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/manage/index.html">Manage</a></li>
+				<li><a href="../../../../../../ja/manual/function/generator/task/doc/schemahtml.html">SchemaHTML</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/function/ormapper/index.html">O/Rマッパ</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/ormapper/behavior/index.html">Behavior</a></li>
+				<li><a href="../../../../../../ja/manual/function/ormapper/conditionbean/index.html">ConditionBean</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/ormapper/outsidesql/index.html">OutsideSql</a></li>
+				<li><a href="../../../../../../ja/manual/function/ormapper/entity/index.html">Entity</a></li>
+				<li><a href="../../../../../../ja/manual/function/ormapper/runtime/index.html">DBFluteランタイム</a></li>
+			</ul>
+		</li>
+		<li>
+			<a href="../../../../../../ja/manual/function/genbafit/index.html">現場フィット</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/genbafit/implfit/index.html">アプリ実装の全体最適</a></li>
+				<li><a href="../../../../../../ja/manual/function/genbafit/projectfit/index.html">プロジェクト構成対応</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/genbafit/runtimefit/index.html">実行時共通要件の実現</a></li>
+				<li><a href="../../../../../../ja/manual/function/genbafit/deprecatedfit/index.html">非推奨な構造フォロー</a></li>
+				<li><a href="../../../../../../ja/manual/function/genbafit/dbflutefit/index.html">DBFluteサポート</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/function/helper/index.html">支援ツール</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/function/generator/intro/index.html">DBFlute Intro</a></li>
+				<li><a href="../../../../../../ja/manual/function/helper/emecha/index.html">EMecha (Eclipse Plugin)</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/function/helper/maven/index.html">Maven DBFlute Plugin</a></li>
+				<li><a href="../../../../../../ja/manual/function/helper/saflute/index.html">SAFlute</a></li>
+				<li><a href="../../../../../../ja/manual/function/helper/utflute/index.html">UTFlute</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/reference/index.html">リファレンス</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/reference/dbway/index.html">DBMSごとの取扱い</a></li>
+				<li><a href="../../../../../../ja/manual/reference/diway/index.html">DIコンテナごとの取扱い</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/reference/dfprop/index.html">DBFluteプロパティ</a></li>
+				<li><a href="../../../../../../ja/manual/reference/dictionary/index.html">DBFlute用語集</a></li>
+				<li><a href="../../../../../../ja/manual/reference/example/index.html">DBFlute Example</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/reference/faq/index.html">FAQ</a></li>
+				<li><a href="../../../../../../ja/manual/reference/troubleshooting/index.html">トラブルシューティング</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../../ja/manual/topic/index.html">トピック</a>
+			<ul>
+				<li><a href="../../../../../../ja/manual/topic/dbdesign/index.html">DB設計</a></li>
+				<li><a href="../../../../../../ja/manual/topic/programming/index.html">プログラミング</a></li>
+				<li><a href="../../../../../../ja/manual/topic/friends/index.html">他のフレームワーク</a></li>
+				<li class="upper-space"><a href="../../../../../../ja/manual/topic/office/index.html">事務的な話</a></li>
+				<li><a href="../../../../../../ja/manual/topic/dbflutenet/index.html">DBFlute.NET</a></li>
+			</ul>
+		</li>
+	</ul>
+
+</div>
+
+<div id="footer">
+	<div><a href="../../../../../../ja/sitemap.html">SiteMap</a> <a href="http://d.hatena.ne.jp/jflute">Author's Blog</a><a href="https://www.seasar.org/issues/browse/DBFLUTE">BTS</a></div>
+	<ul class="footer-navi">
+		<li class="hd-introduction"><a href="../../../../../../ja/introduction/index.html">Introduction</a></li>
+		<li class="hd-tutorial"><a href="../../../../../../ja/tutorial/index.html">Tutorial</a>
+			<ul>
+				<li class="hd-architect"><a href="../../../../../../ja/tutorial/architect.html">for Architect</a></li>
+				<li class="hd-developer"><a href="../../../../../../ja/tutorial/developer.html">for Developer</a></li>
+			</ul>
+		</li>
+		<li class="hd-environment"><a href="../../../../../../ja/environment/index.html">Environment</a>
+			<ul>
+				<li class="hd-install"><a href="../../../../../../ja/environment/setup/index.html">Setup</a></li>
+				<li class="hd-upgrade"><a href="../../../../../../ja/environment/upgrade/index.html">Upgrade</a></li>
+			</ul>
+		</li>
+		<li class="hd-manual"><a href="../../../../../../ja/manual/index.html">Manual</a></li>
+	</ul>
+
+</div>
+
+</div>
+</body>
+</html>

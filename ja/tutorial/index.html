@@ -1,0 +1,174 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja" lang="ja" >
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<meta http-equiv="Content-Style-Type" content="text/css" />
+	<meta name="keywords" content="DBFlute,チュートリアル,Tutorial,Deveploer,Architect" />
+	<link rel="stylesheet" type="text/css" href="../../css/sub.css" />
+	<!--[if IE 6.0]>
+		<link rel="stylesheet" type="text/css" href="../../css/cb/sub.css" />
+	<![endif]--> 
+	<title>DBFluteのチュートリアル | DBFlute</title>
+</head>
+<body>
+<div id="container" class="ct-tutorial">
+
+<div id="mainbar">
+<div id="header">
+	<div class="navi-upper"><a href="../../ja/sitemap.html">SiteMap</a>|<a href="http://d.hatena.ne.jp/jflute/">Author's Blog</a></div>
+	<div class="navi-main">
+	<ul>
+		<li class="hd-introduction"><a href="../../ja/introduction/index.html"><img src="../../image/parts/navi/link-intro.png" alt="Introduction" width="75" height="32" /></a></li>
+		<li class="hd-tutorial"><a href="../../ja/tutorial/index.html"><img src="../../image/parts/navi/link-tuto.png" alt="Tutorial" width="56" height="24" /></a>
+			<ul>
+				<li class="hd-architect"><a href="../../ja/tutorial/architect.html"><img src="../../image/parts/navi/link-arch.png" alt="for Architect" width="80" height="24" /></a></li>
+				<li class="hd-developer"><a href="../../ja/tutorial/developer.html"><img src="../../image/parts/navi/link-dev.png" alt="for Developer" width="87" height="24" /></a></li>
+			</ul>
+		</li>
+		<li class="hd-environment"><a href="../../ja/environment/index.html"><img src="../../image/parts/navi/link-env.png" alt="Environment" width="84" height="25" /></a>
+			<ul>
+				<li class="hd-install"><a href="../../ja/environment/setup/index.html"><img src="../../image/parts/navi/link-setup.png" alt="Setup" width="42" height="24" /></a></li>
+				<li class="hd-upgrade"><a href="../../ja/environment/upgrade/index.html"><img src="../../image/parts/navi/link-upgrade.png" alt="Upgrade" width="61" height="25" /></a></li>
+			</ul>
+		</li>
+		<li class="hd-manual"><a href="../../ja/manual/index.html"><img src="../../image/parts/navi/link-manual.png" alt="Manual" width="62" height="25" /></a></li>
+	</ul>
+	</div>
+</div>
+
+<div id="content">
+	<h1>DBFluteのチュートリアル</h1>
+	<ul class="indexlist">
+		<li><a href="#tutorial">チュートリアル</a></li>
+		<li><a href="#hitomeflute">ひとめでDBFlute</a></li>
+		<li><a href="#handson">ハンズオン</a>
+			<ul>
+				<li><a href="#section">セクションたち</a></li>
+			</ul>
+		</li>
+	</ul>
+
+	<h2 id="tutorial">チュートリアル</h2>
+	<p>
+		DBFluteが初めての方も、システム開発中の方も、常にこれらチュートリアルをエントリとしてDBFluteの情報に触れ合うことができます。
+	</p>
+	<dl class="textlist">
+		<dt><a href="./architect.html">アーキテクトのためのチュートリアル</a></dt>
+		<dd>
+			DBFluteのインストールやDBFluteプロパティの設計など、<em class="keyword">ディベロッパーにDBFluteの実装環境を横展開する</em>
+			アーキテクトのためのチュートリアルです。アーキテクトは一度は必ずこのページを読みましょう。
+		</dd>
+		<dt><a href="./developer.html">ディベロッパーのためのチュートリアル</a></dt>
+		<dd>
+			<em class="keyword">ConditionBeanや外だしSQL(OutsideSql)を使ってアプリ実装を進めていく</em>
+			ディベロッパーのためのチュートリアルです。プログラミングに必要な情報は、おおよそここから辿れますので、すぐにこのページが見られる状態にしておくと良いでしょう。
+		</dd>
+	</dl>
+	<div class="relatedword"><a href="../manual/reference/dictionary/alphabet/wa.html#architect">Architect (アーキテクト)</a></div>
+	<div class="relatedword"><a href="../manual/reference/dictionary/alphabet/wd.html#developer">Developer (ディベロッパー)</a></div>
+
+	<h2 id="hitomeflute">ひとめでDBFlute</h2>
+	<p>
+		DBFlute全体の機能を、パッと見たいときに
+	</p>
+	<dl class="keymainlist">
+		<dt><a href="./hitomeflute.html">ひとめでDBFlute</a></dt>
+		<dd>DBFluteタスクやConditionBean, 外だしSQLなどのリファレンス</dd>
+		<dt><a href="../manual/function/ormapper/conditionbean/hitomecb.html">ひとめでConditionBean</a></dt>
+		<dd>ひたすらConditionBeanのExample実装だらけ</dd>
+	</dl>
+
+	<h2 id="handson">ハンズオン</h2>
+	<p>
+		ハンズオン形式でDBFluteを学んでいくチュートリアルがあります。
+	</p>
+	<dl class="textlist">
+		<dt><a href="./handson/index.html">ハンズオンチュートリアル</a></dt>
+		<dd>
+			DBFluteの環境構築から ConditionBean や外だしSQLを使った実装、区分値などの現場フィットな機能、DBFluteをまんべんなく体験できるチュートリアルです。
+		</dd>
+		<dd>
+			主には、DBFlute作者自身(jflute)が講師となって、ハンズオンでDBFluteの感覚を伝えるためのものではありますが、
+			手順通りにやっていくことで、筋道立てて効率よく学べるようなものになっています。
+		</dd>
+	</dl>
+	<h3 id="section">セクションたち</h3>
+	<dl class="valuemainlist">
+		<dt><a href="./handson/section01.html">セクション 1</a></dt><dd>DBFluteのセットアップから自動生成まで</dd>
+		<dt><a href="./handson/section02.html">セクション 2</a></dt><dd>データ登録をしてConditionBeanで基本の検索</dd>
+		<dt><a href="./handson/section03.html">セクション 3</a></dt><dd>ひたすらConditionBeanの筋トレ</dd>
+		<dt><a href="./handson/section04.html">セクション 4</a></dt><dd>ConditionBeanでタイプセーフ区分値</dd>
+		<dt><a href="./handson/section05.html">セクション 5</a></dt><dd>業務的one-to-oneとテストデータチェック</dd>
+		<dt><a href="./handson/section06.html">セクション 6</a></dt><dd>デバッグログ設定と別名(和名)の利用</dd>
+		<dt><a href="./handson/section07.html">セクション 7</a></dt><dd>Behaviorで登録 (+ 自動採番、共通カラム)</dd>
+		<dt><a href="./handson/section08.html">セクション 8</a></dt><dd>Behaviorで更新、削除 (+ 排他制御、共通カラム)</dd>
+		<dt><a href="./handson/section09.html">セクション 9</a></dt><dd>はじめての外だしSQL (OutsideSql)</dd>
+		<dt><a href="./handson/section10.html">セクション 10</a></dt><dd>DB変更が発生しました</dd>
+		<dt><a href="./handson/section11.html">セクション 11</a></dt><dd>子テーブルへのアプローチ (なんとかReferrer)</dd>
+		<dt>セクション 12</dt><dd>さらなる航海へ</dd>
+	</dl>
+
+</div>
+</div>
+
+<div id="sidebar">
+	<div class="logo"><a href="../../"><img src="../../image/parts/logo.png" alt="dbflute-logo" width="240" height="110" /></a></div>
+<ul>
+		<li><a href="../../ja/tutorial/architect.html">アーキテクトのチュートリアル</a>
+			<ul>
+				<li><a href="../../ja/tutorial/architect.html#knowledge">必要な知識</a></li>
+				<li><a href="../../ja/tutorial/architect.html#action">開発時にやるべきこと</a></li>
+			</ul>
+		</li>
+		<li><a href="../../ja/tutorial/developer.html">ディベロッパーのチュートリアル</a>
+			<ul>
+				<li><a href="../../ja/tutorial/developer.html#about">DBFluteとは？</a></li>
+				<li><a href="../../ja/tutorial/developer.html#style">実装スタイル</a></li>
+				<li><a href="../../ja/tutorial/developer.html#policy">ディベロッパーの十か条</a></li>
+				<li class="upper-space"><a href="../../ja/tutorial/developer.html#faq">ディベロッパーのFAQ</a></li>
+				<li><a href="../../ja/tutorial/developer.html#supplement">補足資料</a></li>
+			</ul>
+		</li>
+		<li><a href="../../ja/tutorial/handson/index.html">DBFluteハンズオン</a>
+			<ul>
+				<li><a href="../../ja/tutorial/handson/section01.html">Section 1</a></li>
+				<li><a href="../../ja/tutorial/handson/section02.html">Section 2</a></li>
+				<li><a href="../../ja/tutorial/handson/section03.html">Section 3</a></li>
+				<li class="upper-space"><a href="../../ja/tutorial/handson/section04.html">Section 4</a></li>
+				<li><a href="../../ja/tutorial/handson/section05.html">Section 5</a></li>
+				<li class="upper-space"><a href="../../ja/tutorial/handson/section06.html">Section 6</a></li>
+				<li><a href="../../ja/tutorial/handson/section07.html">Section 7</a></li>
+				<li><a href="../../ja/tutorial/handson/section08.html">Section 8</a></li>
+				<li class="upper-space"><a href="../../ja/tutorial/handson/section09.html">Section 9</a></li>
+				<li><a href="../../ja/tutorial/handson/section10.html">Section 10</a></li>
+				<li><a href="../../ja/tutorial/handson/section11.html">Section 11</a></li>
+			</ul>
+		</li>
+	</ul>
+
+</div>
+
+<div id="footer">
+	<div><a href="../../ja/sitemap.html">SiteMap</a> <a href="http://d.hatena.ne.jp/jflute">Author's Blog</a><a href="https://www.seasar.org/issues/browse/DBFLUTE">BTS</a></div>
+	<ul class="footer-navi">
+		<li class="hd-introduction"><a href="../../ja/introduction/index.html">Introduction</a></li>
+		<li class="hd-tutorial"><a href="../../ja/tutorial/index.html">Tutorial</a>
+			<ul>
+				<li class="hd-architect"><a href="../../ja/tutorial/architect.html">for Architect</a></li>
+				<li class="hd-developer"><a href="../../ja/tutorial/developer.html">for Developer</a></li>
+			</ul>
+		</li>
+		<li class="hd-environment"><a href="../../ja/environment/index.html">Environment</a>
+			<ul>
+				<li class="hd-install"><a href="../../ja/environment/setup/index.html">Setup</a></li>
+				<li class="hd-upgrade"><a href="../../ja/environment/upgrade/index.html">Upgrade</a></li>
+			</ul>
+		</li>
+		<li class="hd-manual"><a href="../../ja/manual/index.html">Manual</a></li>
+	</ul>
+
+</div>
+
+</div>
+</body>
+</html>

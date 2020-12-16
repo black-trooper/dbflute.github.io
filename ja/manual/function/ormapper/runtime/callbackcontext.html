@@ -1,0 +1,266 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja" lang="ja" >
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<meta http-equiv="Content-Style-Type" content="text/css" />
+	<meta name="keywords" content="DBFlute,DBFluteRuntime,DBFluteランタイム,CallbackContext,SQLログの取得" />
+	<link rel="stylesheet" type="text/css" href="../../../../../css/sub.css" />
+	<!--[if IE 6.0]>
+		<link rel="stylesheet" type="text/css" href="../../../../../css/cb/sub.css" />
+	<![endif]--> 
+	<title>CallbackContext | DBFlute</title>
+</head>
+<body>
+<div id="container" class="ct-manual">
+
+<div id="mainbar">
+<div id="header">
+	<div class="navi-upper"><a href="../../../../../ja/sitemap.html">SiteMap</a>|<a href="http://d.hatena.ne.jp/jflute/">Author's Blog</a></div>
+	<div class="navi-main">
+	<ul>
+		<li class="hd-introduction"><a href="../../../../../ja/introduction/index.html"><img src="../../../../../image/parts/navi/link-intro.png" alt="Introduction" width="75" height="32" /></a></li>
+		<li class="hd-tutorial"><a href="../../../../../ja/tutorial/index.html"><img src="../../../../../image/parts/navi/link-tuto.png" alt="Tutorial" width="56" height="24" /></a>
+			<ul>
+				<li class="hd-architect"><a href="../../../../../ja/tutorial/architect.html"><img src="../../../../../image/parts/navi/link-arch.png" alt="for Architect" width="80" height="24" /></a></li>
+				<li class="hd-developer"><a href="../../../../../ja/tutorial/developer.html"><img src="../../../../../image/parts/navi/link-dev.png" alt="for Developer" width="87" height="24" /></a></li>
+			</ul>
+		</li>
+		<li class="hd-environment"><a href="../../../../../ja/environment/index.html"><img src="../../../../../image/parts/navi/link-env.png" alt="Environment" width="84" height="25" /></a>
+			<ul>
+				<li class="hd-install"><a href="../../../../../ja/environment/setup/index.html"><img src="../../../../../image/parts/navi/link-setup.png" alt="Setup" width="42" height="24" /></a></li>
+				<li class="hd-upgrade"><a href="../../../../../ja/environment/upgrade/index.html"><img src="../../../../../image/parts/navi/link-upgrade.png" alt="Upgrade" width="61" height="25" /></a></li>
+			</ul>
+		</li>
+		<li class="hd-manual"><a href="../../../../../ja/manual/index.html"><img src="../../../../../image/parts/navi/link-manual.png" alt="Manual" width="62" height="25" /></a></li>
+	</ul>
+	</div>
+</div>
+
+<div id="content">
+	<h1>CallbackContext</h1>
+	<div class="relatedpage"><a href="../entity/dbmeta/index.html">DBMeta</a></div>
+	<ul class="indexlist">
+		<li><a href="#about">CallbackContextとは？</a>
+			<ul>
+				<li><a href="#intro">おおよそ、このような感じ</a></li>
+				<li><a href="#basicuse">基本的な使い方をベタベタな実装で学ぶ</a></li>
+				<li><a href="#manyset">多重登録もできるけどclearに注意</a></li>
+			</ul>
+		</li>
+		<li><a href="#bhvcommand">BehaviorCommandHook</a>
+			<ul>
+				<li><a href="#bhvcommandabout">BehaviorCommandとは？</a></li>
+				<li><a href="#bhvcommandbasic">BehaviorCommandHookの基本情報</a></li>
+				<li><a href="#bhvcommandmeta">BehaviorCommandMetaとは？</a></li>
+			</ul>
+		</li>
+		<li><a href="#sqlfire">SqlFireHook</a></li>
+		<li><a href="#sqllog">SqlLogHandler</a></li>
+		<li><a href="#sqlresult">SqlResultHandler</a></li>
+		<li><a href="#sqlstring">SqlStringFilter</a></li>
+	</ul>
+
+	<h2 id="about">CallbackContextとは？</h2>
+	<h3 id="intro">おおよそ、このような感じ</h3>
+	<p>
+		DBFlute の Behavior のDBアクセスの処理の中で、共通的な処理を挟み込むためのクラスです。
+		内部的にはスレッドローカルを利用して、指定された処理をフレームワーク内部まで届けます。
+	</p>
+	<p>
+		このような Hook が用意されています。
+	</p>
+	<dl class="keymainlist">
+		<dt><a href="#bhvcommand">BehaviorCommandHook</a></dt><dd>Behaviorの入り口メソッドに近いレイヤでの前後Hook <span class="frm">(多目的)</span></dd>
+		<dt><a href="#sqlfire">SqlFireHook</a></dt><dd>BehaviorのSQL実行直前レイヤでの前後Hook <span class="frm">(多目的)</span></dd>
+		<dt><a href="#sqllog">SqlLogHandler</a></dt><dd>(SQL実行前に) "SQLのログ" に対するHook</dd>
+		<dt><a href="#sqlresult">SqlResultHandler</a></dt><dd>(SQL実行後に) "SQLの結果" に対するHook <span class="frm">(Entityマッピング後)</span></dd>
+		<dt><a href="#sqlstring">SqlStringFilter</a></dt><dd>(SQL実行前に) "SQL文字列"に対するHook</dd>
+	</dl>
+	<p>
+		多目的な Hook に加えて、特定のリソースを取り扱うための Handler, Filter が用意されています。
+		業務要件やHookタイミングの実装上の都合に合わせて、使い分けると良いでしょう。
+	</p>
+	<h3 id="basicuse">基本的な使い方をベタベタな実装で学ぶ</h3>
+	<p>
+		スレッドローカルでの処理なので、挟み込むように設定します。とりあえず、ベタベタな実装を見てみましょう。
+		<span class="frm">(説明のためのベタベタなので、実際はこのように書くことはないです: 詳しくは後述)</span>
+	</p>
+<pre><span class="codetitle">e.g. CallbackContextのベタベタな実装 @Java</span><code>
+CallbackContext.setBehaviorCommandHookOnThread(<span class="keyword">new</span> BehaviorCommandHook() { <span class="comment">// ここで設定して...</span>
+    @Override
+    <span class="keyword">public void</span> hookBefore(BehaviorCommandMeta meta) {
+        <span class="comment">// ここで事前処理</span>
+    }
+
+    @Override
+    <span class="keyword">public void</span> hookFinally(BehaviorCommandMeta meta, RuntimeException cause) {
+        <span class="comment">// ここで事後処理</span>
+    }
+});
+<span class="keyword">try</span> {
+    <span class="abbreviation">...</span> = memberBhv.selectList(cb -&gt; { <span class="comment">// この処理の中でHookが実行される</span>
+        cb.query()<span class="abbreviation">...</span>
+    });
+} <span class="keyword">finally</span> { <span class="comment">// 最後にちゃんと終了</span>
+    CallbackContext.terminateLastBehaviorCommandHookOnThread();
+
+    <span class="comment">// 1.1.9まではclearしかなかった。クリアだと多重登録したもの全部消えちゃう</span>
+    <span class="comment">//CallbackContext.clearBehaviorCommandHookOnThread();</span>
+}
+</code></pre>
+	<p>
+		実際には、横断的に適用したいことがほとんどなので、このように個別に設定することはないでしょう。
+		後で外したら付け足したりすることを想定すると、アプリの業務的なコードの中で意識で使うべきではなく、アプリの仕組み部分の中で解決されるようにするのが現実的です。
+		<span class="frm">(例えば、Webフレームワークの横断的な前後処理を入れられるInterceptorに相当する部分などにおいて)</span>
+	</p>
+	<h3 id="manyset">多重登録もできるけどclearに注意</h3>
+	<p>
+		同じ種類のインターフェースを複数回登録できます。
+		例えば、BehaviorCommandHook のインスタンスを二つ作って、二つとも set した場合、二つとも実行されます。
+	</p>
+	<p>
+		フレームワーク側(外側)で、すでに BehaviorCommandHook を利用しているときでも、アプリ側(内側)で独自の Hook を set することができます。 
+	</p>
+	<p>
+		<span class="frm">(@since 1.2.0)</span>
+		finallyでの終了は、terminateLast...() を使いましょう。同じ階層(レイヤ)でsetしたものだけを終了させることができます。
+		これを使うことで、階層(レイヤ)をあまり気にせず多重登録することができます。
+		とはいえ、あまりsetする箇所を散在させるのはわかりづらさを生むので、<span class="frm">(多重登録は単純に部品化のための機能と捉えて)</span>可能な限り一元管理して、アプリ(内側)ではその部分をオーバーライドで拡張して処理を付け足すように実装したほうが良いでしょう。
+	</p>
+	<p>
+		<span class="frm">(@until 1.1.9)</span>
+		ただし、clearするとすべて一括でクリアされるので、もしレイヤごとに段階的に set していくのであれば、フレームワーク側(外側)で必ずクリアされるようにしておいて、アプリ側(内側)ではクリアはしないようにすると良いでしょう。
+		だがしかし、多重登録できるとはいえ、そもそも CallbackContext の設定箇所は一元管理する方が良いです<span class="frm">(多重登録は単純に部品化のための機能と捉えて)</span>。
+		もしフレームワーク側で利用しているのであれば、アプリでその部分をオーバーライドで拡張して処理を付け足すように実装したほうが良いでしょう。
+	</p>
+
+	<h2 id="bhvcommand">BehaviorCommandHook</h2>
+	<h3 id="bhvcommandabout">BehaviorCommandとは？</h3>
+	<p>
+		Behavior の selectList() や update() などのそれぞれのDBアクセスメソッドに対応する処理を BehaviorCommand
+		と呼び、DBFlute内部ではそれぞれのメソッドに対応する処理を BehaviorCommand インターフェースで抽象的に取り扱うようにしています。
+	</p>
+	<h3 id="bhvcommandbasic">BehaviorCommandHookの基本情報</h3>
+	<p>
+		Behaviorの入り口メソッドに近いレイヤでの前後Hookで、多目的なインターフェースです。
+	</p>
+	<dl class="shortkeymainlist">
+		<dt>用途</dt><dd>多目的</dd>
+		<dt>実行レイヤ</dt><dd>Behaviorの入り口メソッド <span class="frm">(selectList()など)</span> に近いところ</dd>
+		<dt>実行タイミング</dt><dd>DBアクセス処理の実行前と実行後、例外発生時も実行後に含む</dd>
+		<dt>コールバック引数</dt><dd>BehaviorCommandMeta, 実行されたBehaviorやCBの情報など取得できる</dd>
+	</dl>
+	<p>
+		Behavior自体がDIコンテナのDIコンポーネントなので、DIコンテナのAOP機能で前後処理を実現することもできますが、AOPはクラスエンハンスの負荷が発生しやすいので、DBFluteの仕組みだけで前後処理を実現できるようにしています。
+		<span class="frm">(Behaviorに関しては、ダメでもはないけどできるだけ Interceptor は仕掛けたくない)</span>
+	</p>
+	<h3 id="bhvcommandmeta">BehaviorCommandMetaとは？</h3>
+	<p>
+		BehaviorCommandHookのコールバック引数として、BehaviorCommandMetaインターフェースが利用できます。
+		該当テーブルの DBMeta (テーブルのメタデータ) や、検索系なのか？更新系なのか？などの判定ができます。
+	</p>
+	<div class="relatedpage"><a href="../entity/dbmeta/index.html">DBMeta</a></div>
+
+	<h2 id="sqlfire">SqlFireHook</h2>
+
+	<h2 id="sqllog">SqlLogHandler</h2>
+
+	<h2 id="sqlresult">SqlResultHandler</h2>
+
+	<h2 id="sqlstring">SqlStringFilter</h2>
+
+
+</div>
+</div>
+
+<div id="sidebar">
+	<div class="logo"><a href="../../../../../"><img src="../../../../../image/parts/logo.png" alt="dbflute-logo" width="240" height="110" /></a></div>
+<ul>
+		<li><a href="../../../../../ja/manual/function/generator/index.html">自動生成ツール</a>
+			<ul>
+				<li><a href="../../../../../ja/manual/function/generator/client/index.html">DBFluteクライアント</a></li>
+				<li><a href="../../../../../ja/manual/function/generator/engine/index.html">DBFluteエンジン</a></li>
+				<li><a href="../../../../../ja/manual/function/generator/task/index.html">DBFluteタスク</a>
+				<li class="upper-space"><a href="../../../../../ja/manual/function/generator/task/generate/index.html">Generate</a></li>
+				<li><a href="../../../../../ja/manual/function/generator/task/sql2entity/index.html">Sql2Entity</a></li>
+				<li class="upper-space"><a href="../../../../../ja/manual/function/generator/task/replaceschema/index.html">ReplaceSchema</a></li>
+				<li><a href="../../../../../ja/manual/function/generator/task/manage/index.html">Manage</a></li>
+				<li><a href="../../../../../ja/manual/function/generator/task/doc/schemahtml.html">SchemaHTML</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../ja/manual/function/ormapper/index.html">O/Rマッパ</a>
+			<ul>
+				<li><a href="../../../../../ja/manual/function/ormapper/behavior/index.html">Behavior</a></li>
+				<li><a href="../../../../../ja/manual/function/ormapper/conditionbean/index.html">ConditionBean</a></li>
+				<li class="upper-space"><a href="../../../../../ja/manual/function/ormapper/outsidesql/index.html">OutsideSql</a></li>
+				<li><a href="../../../../../ja/manual/function/ormapper/entity/index.html">Entity</a></li>
+				<li><a href="../../../../../ja/manual/function/ormapper/runtime/index.html">DBFluteランタイム</a></li>
+			</ul>
+		</li>
+		<li>
+			<a href="../../../../../ja/manual/function/genbafit/index.html">現場フィット</a>
+			<ul>
+				<li><a href="../../../../../ja/manual/function/genbafit/implfit/index.html">アプリ実装の全体最適</a></li>
+				<li><a href="../../../../../ja/manual/function/genbafit/projectfit/index.html">プロジェクト構成対応</a></li>
+				<li class="upper-space"><a href="../../../../../ja/manual/function/genbafit/runtimefit/index.html">実行時共通要件の実現</a></li>
+				<li><a href="../../../../../ja/manual/function/genbafit/deprecatedfit/index.html">非推奨な構造フォロー</a></li>
+				<li><a href="../../../../../ja/manual/function/genbafit/dbflutefit/index.html">DBFluteサポート</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../ja/manual/function/helper/index.html">支援ツール</a>
+			<ul>
+				<li><a href="../../../../../ja/manual/function/generator/intro/index.html">DBFlute Intro</a></li>
+				<li><a href="../../../../../ja/manual/function/helper/emecha/index.html">EMecha (Eclipse Plugin)</a></li>
+				<li class="upper-space"><a href="../../../../../ja/manual/function/helper/maven/index.html">Maven DBFlute Plugin</a></li>
+				<li><a href="../../../../../ja/manual/function/helper/saflute/index.html">SAFlute</a></li>
+				<li><a href="../../../../../ja/manual/function/helper/utflute/index.html">UTFlute</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../ja/manual/reference/index.html">リファレンス</a>
+			<ul>
+				<li><a href="../../../../../ja/manual/reference/dbway/index.html">DBMSごとの取扱い</a></li>
+				<li><a href="../../../../../ja/manual/reference/diway/index.html">DIコンテナごとの取扱い</a></li>
+				<li class="upper-space"><a href="../../../../../ja/manual/reference/dfprop/index.html">DBFluteプロパティ</a></li>
+				<li><a href="../../../../../ja/manual/reference/dictionary/index.html">DBFlute用語集</a></li>
+				<li><a href="../../../../../ja/manual/reference/example/index.html">DBFlute Example</a></li>
+				<li class="upper-space"><a href="../../../../../ja/manual/reference/faq/index.html">FAQ</a></li>
+				<li><a href="../../../../../ja/manual/reference/troubleshooting/index.html">トラブルシューティング</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../../../ja/manual/topic/index.html">トピック</a>
+			<ul>
+				<li><a href="../../../../../ja/manual/topic/dbdesign/index.html">DB設計</a></li>
+				<li><a href="../../../../../ja/manual/topic/programming/index.html">プログラミング</a></li>
+				<li><a href="../../../../../ja/manual/topic/friends/index.html">他のフレームワーク</a></li>
+				<li class="upper-space"><a href="../../../../../ja/manual/topic/office/index.html">事務的な話</a></li>
+				<li><a href="../../../../../ja/manual/topic/dbflutenet/index.html">DBFlute.NET</a></li>
+			</ul>
+		</li>
+	</ul>
+
+</div>
+
+<div id="footer">
+	<div><a href="../../../../../ja/sitemap.html">SiteMap</a> <a href="http://d.hatena.ne.jp/jflute">Author's Blog</a><a href="https://www.seasar.org/issues/browse/DBFLUTE">BTS</a></div>
+	<ul class="footer-navi">
+		<li class="hd-introduction"><a href="../../../../../ja/introduction/index.html">Introduction</a></li>
+		<li class="hd-tutorial"><a href="../../../../../ja/tutorial/index.html">Tutorial</a>
+			<ul>
+				<li class="hd-architect"><a href="../../../../../ja/tutorial/architect.html">for Architect</a></li>
+				<li class="hd-developer"><a href="../../../../../ja/tutorial/developer.html">for Developer</a></li>
+			</ul>
+		</li>
+		<li class="hd-environment"><a href="../../../../../ja/environment/index.html">Environment</a>
+			<ul>
+				<li class="hd-install"><a href="../../../../../ja/environment/setup/index.html">Setup</a></li>
+				<li class="hd-upgrade"><a href="../../../../../ja/environment/upgrade/index.html">Upgrade</a></li>
+			</ul>
+		</li>
+		<li class="hd-manual"><a href="../../../../../ja/manual/index.html">Manual</a></li>
+	</ul>
+
+</div>
+
+</div>
+</body>
+</html>

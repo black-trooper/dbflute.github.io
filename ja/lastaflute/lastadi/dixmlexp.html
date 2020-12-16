@@ -1,0 +1,290 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja" lang="ja" >
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<meta http-equiv="Content-Style-Type" content="text/css" />
+	<meta name="keywords" content="DBFlute,LastaFlute,リーンスタートアップ" />
+	<link rel="stylesheet" type="text/css" href="../../../css/lasub.css" />
+	<!--[if IE 6.0]>
+		<link rel="stylesheet" type="text/css" href="../../../css/cb/sub.css" />
+	<![endif]--> 
+	<title>Di xml の Expression | DBFlute</title>
+</head>
+<body>
+<div id="container" class="ct-default">
+
+<div id="mainbar">
+<div id="header">
+	<div class="navi-upper"><a href="../../../ja/sitemap.html">SiteMap</a>|<a href="http://d.hatena.ne.jp/jflute/">Author's Blog</a></div>
+	<div class="navi-main">
+	<ul>
+		<li class="hd-introduction"><a href="../../../ja/introduction/index.html"><img src="../../../image/parts/navi/link-intro.png" alt="Introduction" width="75" height="32" /></a></li>
+		<li class="hd-tutorial"><a href="../../../ja/tutorial/index.html"><img src="../../../image/parts/navi/link-tuto.png" alt="Tutorial" width="56" height="24" /></a>
+			<ul>
+				<li class="hd-architect"><a href="../../../ja/tutorial/architect.html"><img src="../../../image/parts/navi/link-arch.png" alt="for Architect" width="80" height="24" /></a></li>
+				<li class="hd-developer"><a href="../../../ja/tutorial/developer.html"><img src="../../../image/parts/navi/link-dev.png" alt="for Developer" width="87" height="24" /></a></li>
+			</ul>
+		</li>
+		<li class="hd-environment"><a href="../../../ja/environment/index.html"><img src="../../../image/parts/navi/link-env.png" alt="Environment" width="84" height="25" /></a>
+			<ul>
+				<li class="hd-install"><a href="../../../ja/environment/setup/index.html"><img src="../../../image/parts/navi/link-setup.png" alt="Setup" width="42" height="24" /></a></li>
+				<li class="hd-upgrade"><a href="../../../ja/environment/upgrade/index.html"><img src="../../../image/parts/navi/link-upgrade.png" alt="Upgrade" width="61" height="25" /></a></li>
+			</ul>
+		</li>
+		<li class="hd-manual"><a href="../../../ja/manual/index.html"><img src="../../../image/parts/navi/link-manual.png" alt="Manual" width="62" height="25" /></a></li>
+	</ul>
+	</div>
+</div>
+
+<div id="content">
+	<h1>Di xml の Expression</h1>
+	<div class="relatedpage"><a href="./index.html">Lasta Di</a></div>
+	<ul class="indexlist">
+		<li><a href="#overview">Nashorn JavaScript</a></li>
+		<li><a href="#simpleliteral">Simple Literal</a></li>
+		<li><a href="#reflection">Reflection Literal</a></li>
+		<li><a href="#component">Component Reference</a></li>
+		<li><a href="#condition">Condition Operand</a></li>
+	</ul>
+
+	<h2 id="overview">Nashorn JavaScript</h2>
+	<p>
+		Di xml 上のプロパティはコンポーネントの expression のパーサーとして、Javaに組み込まれている、JavaScriptエンジン Nashorn を使っています。
+	</p>
+	<p>
+		これにより、依存ライブラリなしで Di xml を利用することができます。
+	</p>
+	<p>
+		一方で、OGNL や Groovy などに比べて若干表現力は落ちる可能性があります。
+		ですが、Di xml での expression は、ちょっとした生成ロジックの補佐に徹して、あまり複雑になり過ぎないようにする方がよいと考えています。
+		例えば、LastaFluteであれば、環境依存のコンフィグのようなものは、_env.properties で管理することをオススメしています。
+	</p>
+	<div class="relatedpage"><a href="../howto/architecture/objsafeprop.html">LastaFluteのタイプセーフProperties</a></div>
+	<p>
+		ですが、Di xml でのニーズを完全に把握し切れていませんので、ユーザーの方々のフィードバックや利用状況を考慮しながら、バランスよく対応していきたいと思います。
+	</p>
+<pre><span class="codetitle">e.g. Di xml vaious pattern  @Dixml</span><code>
+&lt;components&gt;
+    &lt;include path="lastaflute.xml"/&gt;
+    &lt;include condition="<span class="literal">#exists('#path')</span>" path="trial_option.xml"/&gt;
+    &lt;include condition="<span class="literal">#SMART == 'alwaysNotMatch'</span>" path="rdb.xml"/&gt;
+
+    &lt;component name="sea" class="org.docksidestage.mylasta.trial.TrialDiSea"/&gt;
+    &lt;component name="land" class="org.docksidestage.mylasta.trial.TrialDiLand"/&gt;
+    &lt;component name="parks"&gt;[sea, land]&lt;/component&gt;
+    &lt;component name="maihama" class="org.docksidestage.mylasta.trial.TrialDiMaihama"&gt;
+        &lt;property name="parkList"&gt;parks&lt;/property&gt;
+    &lt;/component&gt;
+
+    &lt;component name="expSea" class="org.docksidestage.mylasta.trial.TrialExpSea"&gt;
+        &lt;property name="simpleString"&gt;<span class="literal">"dockside"</span>&lt;/property&gt;
+        &lt;property name="simpleInteger"&gt;<span class="literal">3</span>&lt;/property&gt;
+        &lt;postConstruct name="addStringList"&gt;
+            &lt;arg&gt;<span class="literal">["a","b"]</span>&lt;/arg&gt;
+        &lt;/postConstruct&gt;
+        &lt;postConstruct name="addStringMap"&gt;
+            &lt;arg&gt;<span class="literal">{"sea.over": "land.oneman"}</span>&lt;/arg&gt;
+        &lt;/postConstruct&gt;
+        &lt;postConstruct name="addIntArray"&gt;
+            &lt;arg&gt;<span class="literal">(int[])[1,2]</span>&lt;/arg&gt
+        &lt;/postConstruct&gt;
+        &lt;postConstruct name="addStringArray"&gt;
+            &lt;arg&gt;<span class="literal">(String[])["sea" ,  "land" ]</span>&lt;/arg&gt;
+        &lt;/postConstruct&gt;
+        &lt;postConstruct name="addType"&gt;
+            &lt;arg&gt;<span class="literal">@org.dbflute.Entity@class</span>&lt;/arg&gt;
+        &lt;/postConstruct&gt;
+        &lt;postConstruct name="addStaticFinal"&gt;
+            &lt;arg&gt;<span class="literal">@jp.sea.SeaPark@STATIC_DEF</span>&lt;/arg&gt;
+        &lt;/postConstruct&gt;
+        &lt;postConstruct name="addStaticMethod">
+            &lt;arg&gt;<span class="literal">@jp.sea.SeaPark@callStatic()</span>&lt;/arg&gt;
+        &lt;/postConstruct&gt;
+        
+        &lt;postConstruct name="addConfigProp"&gt;
+            &lt;arg&gt;<span class="literal">provider.config().getJdbcUrl()</span>&lt;/arg&gt;
+        &lt;/postConstruct&gt;
+        &lt;postConstruct name="addCipher"&gt;
+            &lt;arg&gt;<span class="literal">lastaflute_core.primaryCipher</span>&lt;/arg&gt;
+        &lt;/postConstruct&gt;
+    &lt;/component&gt;
+
+    &lt;component name="expPark"&gt;
+        <span class="literal">provider.config().isDevelopmentHere()</span>
+            ? <span class="literal">"new org.docksidestage.mylasta.trial.TrialSwitchableSea()"</span>
+            : <span class="literal">"new org.docksidestage.mylasta.trial.TrialSwitchableLand()"</span>
+    &lt;/component&gt;
+    &lt;component name="switchingMaihama" class="org.docksidestage.mylasta.trial.TrialSwitchingMaihama"/&gt;
+&lt;/components&gt;
+</code></pre>
+
+	<h2 id="simpleliteral">Simple Literal</h2>
+<pre><span class="codetitle">e.g. Di xml simple literal  @Dixml</span><code>
+&lt;property name="simpleString"&gt;<span class="point">"dockside"</span>&lt;/property&gt;
+&lt;property name="simpleInteger"&gt;<span class="point">3</span>&lt;/property&gt;
+&lt;postConstruct name="addStringList"&gt;
+    &lt;arg&gt;<span class="point">["a","b"]</span>&lt;/arg&gt;
+&lt;/postConstruct&gt;
+&lt;postConstruct name="addStringMap"&gt;
+    &lt;arg&gt;<span class="point">{"sea.over": "land.oneman"}</span>&lt;/arg&gt;
+&lt;/postConstruct&gt;
+</code></pre>
+
+	<h2 id="reflection">Reflection Literal</h2>
+<pre><span class="codetitle">e.g. Di xml reflection literal  @Dixml</span><code>
+
+&lt;postConstruct name="addType"&gt;
+    &lt;arg&gt;<span class="point">@org.dbflute.Entity@class</span>&lt;/arg&gt;
+&lt;/postConstruct&gt;
+&lt;postConstruct name="addStaticFinal"&gt;
+    &lt;arg&gt;<span class="literal">@jp.sea.SeaPark</span>@<span class="point">STATIC_DEF</span>&lt;/arg&gt;
+&lt;/postConstruct&gt;
+&lt;postConstruct name="addStaticMethod">
+    &lt;arg&gt;<span class="literal">@jp.sea.SeaPark</span>@<span class="point">callStatic()</span>&lt;/arg&gt;
+&lt;/postConstruct&gt;
+&lt;postConstruct name="addConfigProp"&gt;
+    &lt;arg&gt;<span class="literal">provider.</span><span class="point">config().getJdbcUrl()</span>&lt;/arg&gt;
+&lt;/postConstruct&gt;
+</code></pre>
+
+	<h2 id="component">Component Reference</h2>
+<pre><span class="codetitle">e.g. Di xml reflection literal  @Dixml</span><code>
+&lt;component name="sea" class="org.docksidestage.mylasta.trial.TrialDiSea"/&gt;
+&lt;component name="land" class="org.docksidestage.mylasta.trial.TrialDiLand"/&gt;
+&lt;component name="parks"&gt;<span class="literal">[sea, land]</span>&lt;/component&gt;
+&lt;component name="maihama" class="org.docksidestage.mylasta.trial.TrialDiMaihama"&gt;
+    &lt;property name="parkList"&gt;<span class="literal">parks</span>&lt;/property&gt;
+&lt;/component&gt;
+
+<span class="abbreviation">...</span>
+&lt;component name="expSea" class="org.docksidestage.mylasta.trial.TrialExpSea"&gt;
+    <span class="abbreviation">...</span>
+    &lt;postConstruct name="addConfigProp"&gt;
+        &lt;arg&gt;<span class="literal">provider.config().getJdbcUrl()</span>&lt;/arg&gt;
+    &lt;/postConstruct&gt;
+    &lt;postConstruct name="addCipher"&gt;
+        &lt;arg&gt;<span class="literal">lastaflute_core.primaryCipher</span>&lt;/arg&gt;
+    &lt;/postConstruct&gt;
+    <span class="abbreviation">...</span>
+&lt;/component&gt;
+</code></pre>
+	<p>
+		リスト内のコンポーネント参照は、すべての要素がコンポーネントである必要があります。
+	</p>
+	<p>
+		同じファイル内、もしくは、include先のコンポーネントを参照できます。その世界の中でユニークなコンポーネント名であれば、そのまま記述できます。
+		ユニークではない、もしくは、紛れがおきないようにしたいとかであれば、lastaflute_core.primaryCipher というように、namespaceを指定します。
+	</p>
+
+	<h2 id="condition">Condition Operand</h2>
+<pre><span class="codetitle">e.g. Di xml reflection literal  @Dixml</span><code>
+&lt;include condition="<span class="literal">#exists('#path')</span>" path="trial_option.xml"/&gt;
+&lt;include condition="<span class="literal">#SMART == 'alwaysNotMatch'</span>" path="rdb.xml"/&gt;
+
+<span class="abbreviation">...</span>
+
+&lt;component name="switchedPark"&gt;
+    <span class="literal">provider.config().isDevelopmentHere()</span>
+        ? <span class="literal">"new org.docksidestage.mylasta.trial.TrialSwitchableSea()"</span>
+        : <span class="literal">"new org.docksidestage.mylasta.trial.TrialSwitchableLand()"</span>
+&lt;/component&gt;
+</code></pre>
+	<p>
+		"xmlファイルが存在していたら include する" を、#exists() を使うことで定型的に書けます。
+	</p>
+	<p>
+		conditionの中で、'==' 演算子も利用できます。#SMART は、'cool', 'hot', 'warm'
+		の三つのどれか。<span class="frm">(Exampleでは、絶対にヒットしないようになっています)</span>
+	</p>
+	<p>
+		三項演算子で new するときは、new部分をダブルクォーテーションで囲います。
+		三項演算子で切り替えたコンポーネントも、他のコンポーネントと同様に、@Resource の private フィールドでDIできます。
+	</p>
+	<p>
+		TODO jflute もっと整理する。
+	</p>
+
+</div>
+</div>
+
+<div id="sidebar">
+	<div class="logo"><a href="../../../"><img src="../../../image/parts/logo.png" alt="dbflute-logo" width="240" height="110" /></a></div>
+<ul>
+		<li><a href="../../../ja/lastaflute/index.html">LastaFluteトップページ</a>
+			<ul>
+				<li><a href="../../../ja/lastaflute/index.html#about">LastaFluteとは？</a></li>
+				<li><a href="../../../ja/lastaflute/index.html#lacode">LastaFluteのコード</a></li>
+				<li class="upper-space"><a href="../../../ja/lastaflute/index.html#quicktrial">動かしてみよう</a></li>
+				<li><a href="../../../ja/lastaflute/index.html#newproject">新プロジェクト</a></li>
+				<li><a href="https://github.com/lastaflute/lastaflute">LastaFlute | Github</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../ja/lastaflute/tutorial/laimpl.html">LastaFlute実装チュートリアル</a>
+			<ul>
+				<li><a href="../../../ja/lastaflute/tutorial/laimpl.html#style">実装スタイル</a></li>
+				<li><a href="../../../ja/lastaflute/tutorial/laimpl.html#prepare">まず準備</a></li>
+				<li class="upper-space"><a href="../../../ja/lastaflute/tutorial/laimpl.html#acquaintanceship">ディベロッパーの心得</a></li>
+				<li><a href="../../../ja/lastaflute/tutorial/laimpl.html#tenclause">ディベロッパーの十か条</a></li>
+				<li><a href="../../../ja/lastaflute/tutorial/faqimpl.html">LastaFluteの実装FAQ</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../ja/lastaflute/howto/action/index.html">LastaFlute の Action</a>
+			<ul>
+				<li><a href="../../../ja/lastaflute/howto/action/makeashtml.html">Actionの作り方 (HTML)</a></li>
+				<li><a href="../../../ja/lastaflute/howto/action/makeasjson">Actionの作り方 (JSON)</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../ja/lastaflute/howto/impldesign/actiondesign.html">Actionの実装デザイン</a>
+			<ul>
+				<li><a href="../../../ja/lastaflute/howto/impldesign/logicdesign.html">Logicの実装デザイン</a></li>
+				<li><a href="../../../ja/lastaflute/howto/impldesign/beandesign.html">Beanの実装デザイン</a></li>
+				<li><a href="../../../ja/lastaflute/howto/impldesign/jsondesign.html">JSON APIのデザイン</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../ja/lastaflute/howto/upgrade/index.html">LastaFluteのアップグレード</a>
+			<ul>
+				<li><a href="../../../ja/lastaflute/howto/upgrade/lachangelog.html">ChangeLog</a></li>
+				<li><a href="../../../ja/lastaflute/howto/upgrade/migration/index.html">移行情報(注意点など)</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../ja/lastaflute/lastadi/index.html">Lasta Diトップページ</a>
+			<ul>
+				<li><a href="../../../ja/lastaflute/lastadi/index.html#twocomp">Two Components</a></li>
+				<li><a href="../../../ja/lastaflute/lastadi/dixmlexp.html">Di xml の表現</a></li>
+				<li><a href="https://github.com/lastaflute/lasta-di">Lasta Di | Github</a></li>
+			</ul>
+		</li>
+		<li><a href="../../../ja/tutorial/onjava8.html">DBFlute on Java8</a>
+			<ul>
+				<li><a href="../../../ja/tutorial/onjava8.html#select">とにかく検索は？</a></li>
+				<li><a href="../../../ja/tutorial/onjava8.html#completion">さあ、補完してみよう！</a></li>
+			</ul>
+		</li>
+	</ul>
+
+</div>
+
+<div id="footer">
+	<div><a href="../../../ja/sitemap.html">SiteMap</a> <a href="http://d.hatena.ne.jp/jflute">Author's Blog</a><a href="https://www.seasar.org/issues/browse/DBFLUTE">BTS</a></div>
+	<ul class="footer-navi">
+		<li class="hd-introduction"><a href="../../../ja/introduction/index.html">Introduction</a></li>
+		<li class="hd-tutorial"><a href="../../../ja/tutorial/index.html">Tutorial</a>
+			<ul>
+				<li class="hd-architect"><a href="../../../ja/tutorial/architect.html">for Architect</a></li>
+				<li class="hd-developer"><a href="../../../ja/tutorial/developer.html">for Developer</a></li>
+			</ul>
+		</li>
+		<li class="hd-environment"><a href="../../../ja/environment/index.html">Environment</a>
+			<ul>
+				<li class="hd-install"><a href="../../../ja/environment/setup/index.html">Setup</a></li>
+				<li class="hd-upgrade"><a href="../../../ja/environment/upgrade/index.html">Upgrade</a></li>
+			</ul>
+		</li>
+		<li class="hd-manual"><a href="../../../ja/manual/index.html">Manual</a></li>
+	</ul>
+
+</div>
+
+</div>
+</body>
+</html>
